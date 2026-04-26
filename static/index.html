@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASR Live v3</title>
+<style>
+/* 使用系统字体，无需联网 */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f12;--bg2:#13171c;--bg3:#1a1f26;--bg4:#20262f;
+  --b1:#1e2530;--b2:#28333f;
+  --ac:#00c896;--acd:rgba(0,200,150,.07);
+  --tx:#dde3ea;--su:#7a8796;--hi:#3a4a5a;
+  --zh:#e8b84b;--en:#5db8f0;--ja:#f07898;
+  --red:#e05050;--grn:#00c896;
+  --tx-strong:#f0f4f8;
+  --tt-zh:#d4a020;--tt-en:#48aae0;--tt-ja:#e86888;
+  --cl-zh:#e8b84b;--cl-en:#5db8f0;--cl-ja:#f07898;--cl-ko:#80d4a0;--cl-fr:#c090e0;--cl-de:#f0a050;--cl-es:#f06060;
+  --r:7px;--fs:16px;
+}
+:root.light{
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#e8eaed;--bg4:#dde0e5;
+  --b1:#d0d4da;--b2:#b8bcc4;
+  --ac:#009970;--acd:rgba(0,153,112,.07);
+  --tx:#1a2030;--su:#5a6478;--hi:#9aa0ac;
+  --zh:#8a6200;--en:#0060a0;--ja:#c03060;
+  --red:#c03030;--grn:#009970;
+  --tx-strong:#0d1420;
+  --tt-zh:#7a5200;--tt-en:#005090;--tt-ja:#a02050;
+  --cl-zh:#8a6000;--cl-en:#0060a0;--cl-ja:#b02050;--cl-ko:#006040;--cl-fr:#7040a0;--cl-de:#c06000;--cl-es:#c02020;
+}
+html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:var(--fs);background:var(--bg);color:var(--tx)}
+
+/* ── topbar ── */
+.top{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;-webkit-app-region:drag}
+.brand{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:500;color:var(--ac);letter-spacing:.1em;flex-shrink:0}
+.brand em{color:var(--hi);font-style:normal}
+.tmid{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--hi);flex-shrink:0;transition:all .3s}
+.dot.on{background:var(--ac);box-shadow:0 0 7px var(--ac);animation:dp 1.8s infinite}
+@keyframes dp{0%,100%{opacity:1}55%{opacity:.3}}
+.tst{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr{display:flex;gap:6px;flex-shrink:0;-webkit-app-region:no-drag}
+.btn{padding:6px 11px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:12px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
+.btn:hover{border-color:var(--ac);color:var(--ac)}
+.btn.ron{border-color:var(--red)!important;color:var(--red)!important;background:rgba(224,80,80,.07)!important}
+.btn.act{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+
+/* ── shell ── */
+.shell{display:flex;height:calc(100vh - 48px);overflow:hidden}
+
+/* ── sidebar ── */
+.side{width:206px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow-y:auto}
+.side::-webkit-scrollbar{width:3px}
+.side::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.sg{padding:12px 14px 10px;border-bottom:1px solid var(--b1)}
+.sg:last-child{border-bottom:none;flex:1}
+.slbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.15em;color:var(--hi);text-transform:uppercase;margin-bottom:8px}
+.rbig{width:100%;padding:10px;border-radius:var(--r);border:0.5px solid var(--b2);background:none;color:var(--su);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.rbig.on{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+.rdot{width:7px;height:7px;border-radius:50%;background:var(--hi);transition:all .2s}
+.rbig.on .rdot{background:var(--ac);animation:dp .85s infinite}
+.lrow{display:flex;gap:5px;flex-wrap:wrap}
+.ltag{padding:5px 9px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.ltag.zh.on{border-color:var(--zh);color:var(--zh);background:rgba(232,184,75,.07)}
+.ltag.en.on{border-color:var(--en);color:var(--en);background:rgba(93,184,240,.07)}
+.ltag.ja.on{border-color:var(--ja);color:var(--ja);background:rgba(240,120,152,.07)}
+.pr{margin-bottom:10px}
+.prh{display:flex;justify-content:space-between;margin-bottom:4px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su)}
+.prh span{color:var(--ac)}
+input[type=range]{width:100%;height:2px;-webkit-appearance:none;background:var(--b2);border-radius:1px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--ac);box-shadow:0 0 4px rgba(0,200,150,.4)}
+.met{display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--b1);font-size:13px}
+.met:last-child{border-bottom:none}
+.mn{color:var(--su)}
+.mv{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--tx)}
+.mv.g{color:var(--grn)}.mv.w{color:#e0a050}.mv.r{color:var(--red)}
+
+/* ── center ── */
+.ctr{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.wave{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:2px;position:relative;flex-shrink:0}
+.wc{width:2px;border-radius:1px;background:var(--ac);opacity:.55;transition:height .07s}
+.wtime{position:absolute;right:16px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;color:var(--su)}
+.sc{flex:1;overflow-y:auto;padding:16px 18px}
+.sc::-webkit-scrollbar{width:3px}
+.sc::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* ── entry ── */
+.ent{margin-bottom:12px;border-radius:var(--r);border:0.5px solid var(--b1);background:var(--bg2);overflow:hidden;animation:eu .22s ease}
+@keyframes eu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ent.zh{border-left:2.5px solid var(--zh)}
+.ent.en{border-left:2.5px solid var(--en)}
+.ent.ja{border-left:2.5px solid var(--ja)}
+.ent.live{border:0.5px solid rgba(0,200,150,.3);border-left:2.5px solid var(--ac)}
+.eHead{display:flex;align-items:center;gap:7px;padding:7px 12px 6px;border-bottom:0.5px solid var(--b1)}
+.badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.07em;padding:2px 7px;border-radius:3px;font-weight:500}
+.badge.zh{background:rgba(232,184,75,.11);color:#b8902a;border:0.5px solid rgba(232,184,75,.2)}
+.badge.en{background:rgba(93,184,240,.11);color:#3a8ab5;border:0.5px solid rgba(93,184,240,.2)}
+.badge.ja{background:rgba(240,120,152,.11);color:#b84d6a;border:0.5px solid rgba(240,120,152,.2)}
+.ets{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--hi)}
+.elat{margin-left:auto;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--hi)}
+.orig{padding:10px 12px 9px;line-height:1.7;font-size:16px;font-weight:400;color:var(--tx-strong);border-bottom:0.5px solid var(--b1)}
+.cur{display:inline-block;width:2px;height:.88em;background:var(--ac);margin-left:2px;vertical-align:text-bottom;animation:bk .65s infinite}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:0}}
+.tblock{padding:8px 12px}
+.trow{display:flex;gap:8px;align-items:baseline;margin-bottom:4px}
+.trow:last-child{margin-bottom:0}
+.tlbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;min-width:24px;flex-shrink:0;margin-top:1px}
+.tt{font-size:14px;line-height:1.6;color:var(--su)}
+.tt.en{color:var(--tt-en)}.tt.ja{color:var(--tt-ja);font-family:'Hiragino Sans','Yu Gothic',sans-serif}.tt.zh{color:var(--tt-zh)}
+
+.empty{text-align:center;padding:60px 20px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--hi);line-height:2.2}
+.toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--bg2);border:0.5px solid var(--ac);border-radius:8px;
+  padding:10px 18px;font-size:13px;color:var(--ac);
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;
+  opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hl{background:rgba(255,210,0,.35);border-radius:2px;padding:0 1px;color:inherit}
+:root.light .hl{background:rgba(255,160,0,.3)}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sw-label{font-size:13px;font-weight:500;color:var(--su)}
+.sw{position:relative;width:40px;height:22px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw-track{position:absolute;inset:0;border-radius:11px;background:var(--b2);transition:background .2s;cursor:pointer}
+.sw input:checked+.sw-track{background:var(--ac)}
+.sw-track::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+.sw-track::after{transform:translateX(18px)}
+
+/* ── ibar ── */
+.ibar{height:46px;background:var(--bg2);border-top:1px solid var(--b1);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0}
+.ibar input{flex:1;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;padding:6px 10px;color:var(--tx);font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:14px;outline:none}
+.ibar input:focus{border-color:rgba(0,200,150,.3)}
+.ibar input::placeholder{color:var(--hi)}
+.ib{padding:6px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:13px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
+.ib:hover{border-color:var(--ac);color:var(--ac)}
+
+/* ── settings overlay ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200}
+.sp{width:540px;max-height:88vh;background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.sph{padding:14px 18px;border-bottom:0.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.spt{font-weight:500;font-size:14px;color:var(--tx)}
+.scl{width:24px;height:24px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);cursor:pointer;font-size:14px;line-height:24px;text-align:center;transition:all .12s}
+.scl:hover{border-color:var(--red);color:var(--red)}
+.spb{padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.spb::-webkit-scrollbar{width:3px}
+.spb::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.sf{display:flex;flex-direction:column;gap:5px}
+.sf.full{grid-column:1/-1}
+.sfl{font-size:13px;font-weight:500;color:var(--su)}
+.sfl small{font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;margin-left:4px}
+select,.si{width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:14px;outline:none;-webkit-appearance:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
+select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
+.ssr{display:flex;align-items:center;gap:8px}
+.ssr input{flex:1;height:2px}
+.ssc{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--ac);min-width:34px;text-align:right}
+.ssect{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--hi);grid-column:1/-1;padding-top:4px;border-top:0.5px solid var(--b1);margin-top:2px}
+.togs{display:flex;gap:6px;flex-wrap:wrap}
+.tog{padding:6px 11px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.tog.on{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+.hint{font-size:10px;color:var(--hi);margin-top:2px;line-height:1.5}
+.spf{padding:12px 18px;border-top:0.5px solid var(--b1);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+.bsave{padding:7px 18px;border-radius:5px;border:none;background:var(--ac);color:#081a14;font-size:12px;font-weight:500;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
+.bsave:hover{opacity:.85}
+.bcan{padding:7px 14px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:12px;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;transition:all .12s}
+.bcan:hover{color:var(--tx);border-color:var(--tx)}
+/* ── 首次下载引导面板 ── */
+.dl-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.dl-box{width:520px;background:var(--bg2);border:0.5px solid var(--b2);border-radius:12px;overflow:hidden}
+.dl-head{padding:24px 28px 16px;border-bottom:0.5px solid var(--b1)}
+.dl-title{font-size:18px;font-weight:500;color:var(--tx);margin-bottom:6px}
+.dl-sub{font-size:13px;color:var(--su);line-height:1.6}
+.dl-body{padding:20px 28px;display:flex;flex-direction:column;gap:14px}
+.dl-model{background:var(--bg3);border:0.5px solid var(--b1);border-radius:8px;padding:14px 16px}
+.dl-model-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.dl-model-name{font-size:14px;font-weight:500;color:var(--tx)}
+.dl-model-size{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--su)}
+.dl-model-desc{font-size:12px;color:var(--su);margin-bottom:10px}
+.dl-status{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;padding:4px 0;color:var(--hi);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-status.ok{color:var(--ac)}
+.dl-status.err{color:var(--red)}
+.dl-progress{height:3px;background:var(--b1);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+.dl-progress-bar{height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s}
+.dl-cached{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ac);font-weight:500}
+.dl-foot{padding:16px 28px;border-top:0.5px solid var(--b1);display:flex;gap:10px;justify-content:flex-end}
+.dl-btn{padding:9px 20px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-family:-apple-system,'PingFang SC',sans-serif;font-weight:500}
+.dl-btn-primary{background:var(--ac);color:#081a14}
+.dl-btn-primary:hover{opacity:.85}
+.dl-btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.dl-btn-skip{background:none;border:0.5px solid var(--b2);color:var(--su)}
+.dl-btn-skip:hover{color:var(--tx);border-color:var(--tx)}
+</style>
+</head>
+<body>
+
+<!-- topbar -->
+<!-- 首次下载引导面板（动态生成） -->
+<div class="dl-overlay" id="DL_OVERLAY" style="display:none"></div>
+
+<div class="top">
+  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v3</span></div>
+  <div class="tmid">
+    <div class="dot" id="DOT"></div>
+    <span class="tst" id="TST">连接中…</span>
+  </div>
+  <div class="tr">
+    <button class="btn" id="RBT" onclick="toggleRec()">● 开始</button>
+    <button class="btn" onclick="doExportDialog()">导出 ▾</button>
+    <button class="btn" onclick="clearAll()">清空</button>
+    <button class="btn" id="THMBTN" onclick="toggleTheme()" title="切换主题">🌙</button>
+    <button class="btn act" onclick="openSettings()">设置</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- sidebar -->
+  <div class="side">
+    <div class="sg">
+      <div class="slbl">录音控制</div>
+      <button class="rbig" id="SRB" onclick="toggleRec()">
+        <div class="rdot"></div><span id="SRL">开始识别</span>
+      </button>
+    </div>
+    <div class="sg">
+      <div class="slbl">识别语言</div>
+      <div class="lrow">
+        <div class="ltag zh on" onclick="this.classList.toggle('on')">中文</div>
+        <div class="ltag en on" onclick="this.classList.toggle('on')">英文</div>
+        <div class="ltag ja on" onclick="this.classList.toggle('on')">日文</div>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="slbl">快速调节</div>
+      <div class="pr">
+        <div class="prh">句尾静音 <span id="SV">0.6s</span></div>
+        <input type="range" min="2" max="20" value="6" step="1"
+          oninput="SV.textContent=(+this.value/10).toFixed(1)+'s';queueSettings({silence_s:+this.value/10})">
+      </div>
+      <div class="pr">
+        <div class="prh">VAD 灵敏度 <span id="VV">0.45</span></div>
+        <input type="range" min="20" max="80" value="45" step="1"
+          oninput="VV.textContent=(+this.value/100).toFixed(2);queueSettings({vad_threshold:+this.value/100})">
+      </div>
+    </div>
+    <div class="sg">
+      <div class="slbl">实时指标</div>
+      <div class="met"><span class="mn">ASR 时滞</span><span class="mv g" id="MA">—</span></div>
+      <div class="met"><span class="mn">LLM 时滞</span><span class="mv g" id="ML">—</span></div>
+      <div class="met"><span class="mn">合计</span><span class="mv g" id="MT">—</span></div>
+      <div class="met"><span class="mn">句数</span><span class="mv" id="MC">0</span></div>
+      <div class="met"><span class="mn">字数</span><span class="mv" id="MCH">0</span></div>
+      <div class="met"><span class="mn">运行时长</span><span class="mv" id="MRT">—</span></div>
+    </div>
+  </div>
+
+  <!-- center -->
+  <div class="ctr">
+    <div class="wave" id="WB">
+      <span class="wtime" id="WT">00:00:00</span>
+    </div>
+    <div class="sc" id="SC">
+      <div class="empty" id="HINT">点击「开始识别」<br>开始实时语音转写</div>
+    </div>
+    <div class="ibar">
+      <div style="position:relative;flex:1;display:flex;align-items:center">
+        <input type="text" placeholder="搜索字幕内容…" oninput="searchEntries(this.value)" id="SB"
+          style="width:100%;padding-right:28px">
+        <button id="SBCLR" onclick="clearSearch()" title="清除搜索"
+          style="position:absolute;right:8px;border:none;background:none;color:var(--hi);font-size:14px;cursor:pointer;line-height:1;padding:0;display:none">✕</button>
+      </div>
+      <button class="ib" onclick="autoScroll=true;scrollBot()">↓ 最新</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- settings -->
+<div class="ov" id="OV" style="display:none">
+  <div class="sp">
+    <div class="sph">
+      <span class="spt">设置</span>
+      <button class="scl" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="spb" id="SPB">
+
+      <div class="ssect">ASR 模型</div>
+
+      <div class="sf">
+        <div class="sfl">Whisper 模型 <small>大=准但慢</small></div>
+        <select id="SW">
+          <option value="mlx-community/whisper-large-v3-turbo">large-v3-turbo fp16（当前）</option>
+          <option value="mlx-community/whisper-large-v3-turbo-q4">large-v3-turbo q4（更小）</option>
+          <option value="mlx-community/whisper-large-v3-mlx">large-v3 原精度（最准）</option>
+          <option value="mlx-community/whisper-medium-mlx-q4">medium q4（省内存）</option>
+        </select>
+      </div>
+
+      <div class="sf">
+        <div class="sfl">LLM 矫正模型 <small>影响翻译质量</small></div>
+        <select id="SL"><option value="">加载中…</option></select>
+      </div>
+
+      <div class="ssect">场景与术语</div>
+
+      <div class="sf full">
+        <div class="sfl">场景描述 / 专业术语 <small>留空则不启用</small></div>
+        <textarea id="SCP" rows="4"
+          placeholder="例如：这是一段医疗会诊对话，涉及以下术语：心房颤动、左心室射血分数、冠状动脉旁路移植术&#10;&#10;或：This is a tech product review. Key terms: Apple Silicon, Neural Engine, MLX framework, unified memory"
+          style="width:100%;padding:8px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:13px;outline:none;resize:vertical;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;line-height:1.6"></textarea>
+        <div class="hint">同时作为 Whisper 的词汇提示和 LLM 矫正的参考，对专业名词识别有显著提升</div>
+      </div>
+
+      <div class="ssect">翻译目标</div>
+
+      <div class="sf full">
+        <div class="sfl">输出语言 <small>可多选，未选则仅矫正</small></div>
+        <div class="togs" id="TLOGS">
+          <div class="tog on" data-lang="中文">中文</div>
+          <div class="tog on" data-lang="英文">英文</div>
+          <div class="tog on" data-lang="日文">日文</div>
+          <div class="tog" data-lang="韩文">韩文</div>
+          <div class="tog" data-lang="法文">法文</div>
+          <div class="tog" data-lang="德文">德文</div>
+          <div class="tog" data-lang="西班牙文">西班牙文</div>
+        </div>
+        <div class="hint">中文输入→翻译至选定语言；英/日文输入→同理双向翻译</div>
+      </div>
+
+      <div class="ssect">VAD · 音频</div>
+
+      <div class="sf">
+        <div class="sfl">句尾静音阈值</div>
+        <div class="ssr">
+          <input type="range" min="2" max="20" value="6" step="1" id="SSL"
+            oninput="this.nextElementSibling.textContent=(+this.value/10).toFixed(1)+'s'">
+          <span class="ssc">0.6s</span>
+        </div>
+      </div>
+
+      <div class="sf">
+        <div class="sfl">VAD 灵敏度</div>
+        <div class="ssr">
+          <input type="range" min="20" max="80" value="45" step="1" id="SVL"
+            oninput="this.nextElementSibling.textContent=(+this.value/100).toFixed(2)">
+          <span class="ssc">0.45</span>
+        </div>
+      </div>
+
+      <div class="sf">
+        <div class="sfl">最长单句时长</div>
+        <div class="ssr">
+          <input type="range" min="5" max="40" value="20" step="1" id="SML"
+            oninput="this.nextElementSibling.textContent=this.value+'s'">
+          <span class="ssc">20s</span>
+        </div>
+      </div>
+
+      <div class="sf">
+        <div class="sfl">上下文句数</div>
+        <div class="ssr">
+          <input type="range" min="1" max="12" value="6" step="1" id="SCL"
+            oninput="this.nextElementSibling.textContent=this.value+'句'">
+          <span class="ssc">6句</span>
+        </div>
+      </div>
+
+      <div class="ssect">音频输入</div>
+
+      <div class="sf full">
+        <div class="sw-row">
+          <span class="sw-label">录音保存 <small style="font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;margin-left:4px">停止时自动保存 MP3</small></span>
+          <label class="sw">
+            <input type="checkbox" id="SREC" checked onchange="
+              const row=document.getElementById('SBITRATE_ROW');
+              if(row) row.style.display=this.checked?'':'none';
+            ">
+            <div class="sw-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="sf" id="SBITRATE_ROW">
+        <div class="sfl">MP3 码率 <small>越高越清晰</small></div>
+        <select id="SBIT">
+          <option value="64">64 kbps（省空间，约 0.5MB/分钟）</option>
+          <option value="128">128 kbps（标准质量，约 1MB/分钟）</option>
+          <option value="192" selected>192 kbps（高质量，约 1.5MB/分钟）</option>
+          <option value="320">320 kbps（无损级，约 2.5MB/分钟）</option>
+        </select>
+      </div>
+
+      <div class="sf full">
+        <div class="sfl">麦克风设备</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="SDS" style="flex:1"><option value="">加载中…</option></select>
+          <button id="RDEVBTN" onclick="reloadDevices()" title="重新检测麦克风"
+            style="flex-shrink:0;width:34px;height:34px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center"
+            onmouseover="this.style.borderColor='var(--ac)';this.style.color='var(--ac)'"
+            onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--su)'">
+            ↻
+          </button>
+        </div>
+      </div>
+
+      <div class="ssect">界面</div>
+
+      <div class="sf">
+        <div class="sfl">字幕字号</div>
+        <select id="SFS">
+          <option value="13">小（13px）</option>
+          <option value="15" selected>中（15px）</option>
+          <option value="17">大（17px）</option>
+          <option value="20">特大（20px）</option>
+        </select>
+      </div>
+
+      <div class="sf">
+        <div class="sfl">自动滚动</div>
+        <select id="SAS">
+          <option value="1" selected>开启</option>
+          <option value="0">关闭</option>
+        </select>
+      </div>
+
+    </div>
+    <div class="spf">
+      <button class="bcan" onclick="closeSettings()">取消</button>
+      <button class="bsave" onclick="saveSettings()">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- export menu -->
+<div class="ov" id="EV" style="display:none">
+  <div style="background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;width:320px;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:0.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-weight:500;color:var(--tx)">导出字幕</span>
+      <button class="scl" onclick="EV.style.display='none'">✕</button>
+    </div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:11px;font-weight:500;color:var(--su);margin-bottom:6px;">导出语言</div>
+        <select id="ELANG" style="width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:13px;outline:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif">
+          <option value="all">全部语言（混合）</option>
+          <option value="corrected">仅原文（矫正后）</option>
+          <option value="raw">仅原文（ASR 原始）</option>
+        </select>
+      </div>
+      <div style="border-top:0.5px solid var(--b1);padding-top:10px;">
+        <div style="font-size:11px;font-weight:500;color:var(--su);margin-bottom:6px;">文件格式</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('txt')">纯文本 TXT</button>
+          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('srt')">SRT 字幕文件</button>
+          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('json')">JSON（含时间戳）</button>
+          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('md')">Markdown</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── WebSocket ──────────────────────────────────────────────
+let ws, recSec=0, recTi, sentCnt=0, charCnt=0, autoScroll=true;
+
+const G = {};
+
+let _toastTimer;
+function showToast(msg){
+  let t = document.getElementById('TOAST');
+  if(!t){ t=document.createElement('div'); t.id='TOAST'; t.className='toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 4000);
+}
+
+function toggleTheme(){
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('THMBTN').textContent = isLight ? '🌑' : '🌙';
+  localStorage.setItem('asrlive_theme', isLight ? 'light' : 'dark');
+}
+
+// 恢复上次主题
+(function(){
+  const saved = localStorage.getItem('asrlive_theme');
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    // THMBTN 此时还没渲染，等 DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+      const b = document.getElementById('THMBTN');
+      if(b) b.textContent = '🌑';
+    });
+  }
+})();
+
+function connect(){
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => { MRT.textContent='已连接'; };
+  ws.onclose = () => { MRT.textContent='重连中…'; setTimeout(connect, 2000); };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+}
+
+function send(o){ if(ws&&ws.readyState===1) ws.send(JSON.stringify(o)); }
+
+function handle(m){
+  if(m.type==='init'){ G.settings=m.settings||{};
+    applySettings(m.settings||{});
+    if(m.recording) setRec(true);
+    (m.history||[]).forEach(addEntry);
+  }
+  else if(m.type==='status'){
+    TST.textContent=m.text;
+    if(m.ready) DOT.classList.add('on');
+  }
+  else if(m.type==='recording') setRec(m.value);
+  else if(m.type==='asr_partial') showLive(m.raw,m.lang,m.asr_ms);
+  else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms,m.llm_ms); }
+  else if(m.type==='cleared'){
+    SC.innerHTML='<div class="empty" id="HINT">点击「开始识别」<br>开始实时语音转写</div>';
+    sentCnt=0;charCnt=0;MC.textContent='0';MCH.textContent='0';
+  }
+  else if(m.type==='export') dlFile(m.content,m.format);
+  else if(m.type==='settings'){ G.settings=m.settings; applySettings(m.settings); }
+  else if(m.type==='save_done'){ showToast('已保存：'+m.path.split('/').pop()); }
+  else if(m.type==='save_cancelled'){ /* 用户取消，静默 */ }
+  else if(m.type.startsWith('dl_')){ handleDlMsg(m); }
+  else if(m.type==='rec_saved'){
+    const name = m.path.split('/').pop();
+    const size = m.size_mb ? ` (${m.size_mb}MB)` : '';
+    showToast(`录音已保存：${name}${size}`);
+  }
+}
+
+// ── 录音状态 ──────────────────────────────────────────────
+function setRec(on){
+  RBT.textContent = on?'■ 停止':'● 开始';
+  RBT.className   = 'btn'+(on?' ron':'');
+  SRB.className   = 'rbig'+(on?' on':'');
+  SRL.textContent = on?'停止识别':'开始识别';
+  DOT.className   = 'dot'+(on?' on':'');
+  const wn = (G.settings&&G.settings.whisper_repo||'whisper').split('/').pop();
+  const ln = (G.settings&&G.settings.llm_repo||'llm').split('/').pop();
+  TST.textContent = on?`识别中 · ${wn} · ${ln}`:'已暂停';
+  if(on){
+    recSec=0;
+    recTi=setInterval(()=>{
+      recSec++;
+      const h=String(Math.floor(recSec/3600)).padStart(2,'0'),
+            mi=String(Math.floor((recSec%3600)/60)).padStart(2,'0'),
+            s=String(recSec%60).padStart(2,'0');
+      WT.textContent=`${h}:${mi}:${s}`;
+      MRT.textContent=`${h}:${mi}:${s}`;
+    },1000);
+    waveOn=true; waveLoop();
+  } else {
+    clearInterval(recTi); waveOn=false;
+  }
+}
+function toggleRec(){
+  send({action: SRB.classList.contains('on')?'stop':'start'});
+}
+
+// ── 波形 ──────────────────────────────────────────────────
+const WB=document.getElementById('WB');
+const wcs=[];
+for(let i=0;i<76;i++){const d=document.createElement('div');d.className='wc';d.style.height='3px';WB.insertBefore(d,WB.lastElementChild);wcs.push(d)}
+let waveOn=false;
+function waveLoop(){
+  if(!waveOn){wcs.forEach(c=>c.style.height='3px');return}
+  wcs.forEach((c,i)=>{
+    const h=2+Math.random()*30*(0.3+0.7*Math.abs(Math.sin(Date.now()/500+i*.33)));
+    c.style.height=h+'px';
+  });
+  setTimeout(waveLoop,65);
+}
+
+// ── 字幕 ──────────────────────────────────────────────────
+// 语言代码映射
+const LANG_MAP={chinese:'zh',english:'en',japanese:'ja',korean:'ko',french:'fr',german:'de',spanish:'es',
+                zh:'zh',en:'en',ja:'ja',ko:'ko',fr:'fr',de:'de',es:'es'};
+function lc(lang){ return LANG_MAP[(lang||'').toLowerCase()]||'en'; }
+
+// 中文显示名
+const LANG_ZH={zh:'中文',en:'英文',ja:'日文',ko:'韩文',fr:'法文',de:'德文',es:'西班牙文'};
+
+// 每种语言对应的 CSS class / 颜色变量（保证同语言颜色一致）
+const LANG_COLOR={
+  zh:'--cl-zh', en:'--cl-en', ja:'--cl-ja',
+  ko:'--cl-ko', fr:'--cl-fr', de:'--cl-de', es:'--cl-es',
+};
+// 翻译语言名 → 语言代码
+const TRANS_TO_CODE={
+  English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es',
+  英文:'en',日文:'ja',韩文:'ko',法文:'fr',德文:'de',西班牙文:'es',
+  Chinese:'zh',中文:'zh',
+};
+function tc(n){
+  return TRANS_TO_CODE[n]||'en';
+}
+function langColor(code){
+  return `var(${LANG_COLOR[code]||'--cl-en'})`;
+}
+
+function addEntry(e){
+  const h=document.getElementById('HINT'); if(h) h.remove();
+  const cls=lc(e.language);
+  const div=document.createElement('div');
+  div.className=`ent ${cls}`;
+  div.dataset.id=e.id;
+  div.dataset.raw=(e.corrected||'').toLowerCase()+' '+Object.values(e.translations||{}).join(' ').toLowerCase();
+
+  // 同语言不显示译文（说中文时不显示中文译文）
+  const origCode = lc(e.language);
+  const transHtml=Object.entries(e.translations||{}).map(([ln,tx])=>{
+    const code=tc(ln);
+    if(code===origCode) return ''; // 跳过同语言
+    const col=langColor(code);
+    const label=LANG_ZH[code]||ln;
+    const safeQ = escHtml(tx).replace(/"/g,'&quot;');
+    return `<div class="trow"><span class="tlbl" style="color:${col}">${label}</span><span class="tt" data-plain="${safeQ}" style="color:${col};opacity:.85">${escHtml(tx)}</span></div>`;
+  }).join('');
+
+  div.innerHTML=`
+    <div class="eHead">
+      <span class="badge ${cls}">${LANG_ZH[cls]||cls}</span>
+      <span class="ets">${e.timestamp}</span>
+      <span class="elat">ASR ${e.asr_ms}ms · LLM ${e.llm_ms}ms</span>
+    </div>
+    <div class="orig" id="orig-${e.id}" data-plain="${escHtml(e.corrected).replace(/"/g,'&quot;')}">${escHtml(e.corrected)}</div>
+    ${transHtml?`<div class="tblock">${transHtml}</div>`:''}
+  `;
+
+  SC.appendChild(div);
+  sentCnt++; charCnt+=(e.corrected||'').length;
+  MC.textContent=sentCnt; MCH.textContent=charCnt;
+  if(autoScroll) scrollBot();
+}
+
+function showLive(raw,lang,asr_ms){
+  removeLive();
+  const h=document.getElementById('HINT'); if(h) h.remove();
+  const cls=lc(lang);
+  const div=document.createElement('div');
+  div.className='ent live'; div.id='LIVE';
+  div.innerHTML=`
+    <div class="eHead">
+      <span class="badge ${cls}">${LANG_ZH[cls]||cls}</span>
+      <span class="ets">${new Date().toTimeString().slice(0,8)}</span>
+      <span class="elat">ASR ${asr_ms}ms · LLM 处理中…</span>
+    </div>
+    <div class="orig">${escHtml(raw)}<span class="cur"></span></div>
+  `;
+  SC.appendChild(div);
+  if(autoScroll) scrollBot();
+}
+function removeLive(){ const l=document.getElementById('LIVE'); if(l) l.remove(); }
+
+// ── 指标 ──────────────────────────────────────────────────
+function updateMetrics(a,l){
+  MA.textContent=a+'ms'; ML.textContent=l+'ms';
+  const t=a+l; MT.textContent=t+'ms';
+  MT.className='mv '+(t<1000?'g':t<2000?'w':'r');
+}
+
+// ── 搜索 ──────────────────────────────────────────────────
+function highlightText(text, q){
+  if(!q) return escHtml(text);
+  const escaped = escHtml(text);
+  const escapedQ = escHtml(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return escaped.replace(new RegExp(escapedQ, 'gi'), m=>`<mark class="hl">${m}</mark>`);
+}
+
+function clearSearch(){
+  document.getElementById('SB').value = '';
+  searchEntries('');
+}
+
+function searchEntries(q){
+  const clrBtn = document.getElementById('SBCLR');
+  if(clrBtn) clrBtn.style.display = q ? 'block' : 'none';
+  autoScroll = !q;
+  const qL = q.toLowerCase();
+  document.querySelectorAll('.ent:not(.live)').forEach(el=>{
+    const raw = el.dataset.raw || '';
+    const matches = !q || raw.includes(qL);
+    el.style.display = matches ? '' : 'none';
+    if(!matches) return;
+
+    // 高亮原文
+    const origEl = el.querySelector('.orig');
+    if(origEl && origEl.dataset.plain !== undefined){
+      origEl.innerHTML = q
+        ? highlightText(origEl.dataset.plain, q)
+        : escHtml(origEl.dataset.plain);
+    }
+    // 高亮译文
+    el.querySelectorAll('.tt[data-plain]').forEach(ttEl=>{
+      ttEl.innerHTML = q
+        ? highlightText(ttEl.dataset.plain, q)
+        : escHtml(ttEl.dataset.plain);
+    });
+  });
+}
+
+function scrollBot(){ SC.scrollTop=SC.scrollHeight; }
+SC.addEventListener('scroll',()=>{
+  autoScroll = SC.scrollHeight-SC.scrollTop-SC.clientHeight < 80;
+});
+
+// ── 设置 ──────────────────────────────────────────────────
+let settingsTi;
+function queueSettings(patch){
+  clearTimeout(settingsTi);
+  settingsTi=setTimeout(()=>send({action:'update_settings',settings:patch}),500);
+}
+
+function applySettings(s){
+  if(s.font_size) document.documentElement.style.setProperty('--fs',s.font_size+'px');
+  if(s.auto_scroll!==undefined) autoScroll=!!s.auto_scroll;
+}
+
+async function openSettings(){
+  OV.style.display='flex';
+  try {
+    const res = await fetch('/api/models');
+    const data = await res.json();
+    const cur = G.settings || {};
+
+    // 恢复场景描述
+    const scp = document.getElementById('SCP');
+    if(scp) scp.value = cur.context_prompt || '';
+
+    // 恢复录音设置
+    const srec = document.getElementById('SREC');
+    const sbit = document.getElementById('SBIT');
+    const sbitRow = document.getElementById('SBITRATE_ROW');
+    if(srec){
+      srec.checked = cur.save_recording !== false;
+      srec.onchange = () => {
+        if(sbitRow) sbitRow.style.display = srec.checked ? '' : 'none';
+      };
+      if(sbitRow) sbitRow.style.display = srec.checked ? '' : 'none';
+    }
+    if(sbit) sbit.value = cur.mp3_bitrate || '192';
+
+    // Whisper 下拉
+    SW.innerHTML = data.whisper.length
+      ? data.whisper.map(r => {
+          const name = r.split('/')[1];
+          const isCur = r === (cur.whisper_repo || '');
+          const sel = isCur ? ' selected' : '';
+          const label = isCur ? `${name}（当前）` : name;
+          return `<option value="${r}"${sel}>${label}</option>`;
+        }).join('')
+      : '<option value="">未找到本地 Whisper 模型</option>';
+
+    // LLM 下拉
+    SL.innerHTML = data.llm.length
+      ? data.llm.map(r => {
+          const name = r.split('/')[1];
+          const isCur = r === (cur.llm_repo || '');
+          const sel = isCur ? ' selected' : '';
+          const label = isCur ? `${name}（当前）` : name;
+          return `<option value="${r}"${sel}>${label}</option>`;
+        }).join('')
+      : '<option value="">未找到本地 LLM 模型</option>';
+
+    // 加载麦克风设备
+    try {
+      const devRes = await fetch('/api/devices');
+      const devs = await devRes.json();
+      const curDev = cur.input_device;
+      SDS.innerHTML = `<option value=""${curDev===null||curDev===undefined?' selected':''}>系统默认麦克风</option>`;
+      devs.forEach(d => {
+        const sel = String(d.id) === String(curDev) ? ' selected' : '';
+        SDS.innerHTML += `<option value="${d.id}"${sel}>${d.name}</option>`;
+      });
+    } catch(e2) {
+      SDS.innerHTML = '<option value="">获取设备失败</option>';
+    }
+
+  } catch(e) {
+    SW.innerHTML = '<option value="">扫描失败</option>';
+    SL.innerHTML = '<option value="">扫描失败</option>';
+  }
+}
+function closeSettings(){ OV.style.display='none'; }
+
+function saveSettings(){
+  const langs=[...document.querySelectorAll('#TLOGS .tog.on')].map(t=>t.dataset.lang);
+  const devVal = SDS.value === '' ? null : parseInt(SDS.value);
+  const settings={
+    whisper_repo:   SW.value,
+    llm_repo:       SL.value,
+    input_device:   devVal,
+    context_prompt:  (document.getElementById('SCP')?.value || '').trim(),
+    save_recording:  document.getElementById('SREC')?.checked ?? true,
+    mp3_bitrate:     document.getElementById('SBIT')?.value || '192',
+    translate_to: langs,
+    silence_s:    +SSL.value/10,
+    vad_threshold:+SVL.value/100,
+    max_sentence_s:+SML.value,
+    ctx_sentences: +SCL.value,
+    font_size:    +SFS.value,
+    auto_scroll:  +SAS.value===1,
+  };
+  send({action:'update_settings',settings});
+  applySettings(settings);
+  closeSettings();
+}
+
+// 设置面板 lang toggles
+document.querySelectorAll('#TLOGS .tog').forEach(t=>{
+  t.onclick=()=>t.classList.toggle('on');
+});
+
+// ── 导出 ──────────────────────────────────────────────────
+async function reloadDevices(){
+  const btn = document.getElementById('RDEVBTN');
+  btn.style.transform = 'rotate(360deg)';
+  btn.style.transition = 'transform .5s ease';
+  setTimeout(() => { btn.style.transform = ''; btn.style.transition = 'all .15s'; }, 500);
+  // 先保存当前选中值，清空后才能正确恢复
+  const prevVal = SDS.value;
+  SDS.innerHTML = '<option value="">检测中…</option>';
+  try {
+    const devRes = await fetch('/api/devices');
+    const devs = await devRes.json();
+    // 重建选项
+    SDS.innerHTML = `<option value="">系统默认麦克风</option>`;
+    devs.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name;
+      SDS.appendChild(opt);
+    });
+    // 恢复之前的选择（若设备仍存在）
+    const exists = [...SDS.options].some(o => String(o.value) === String(prevVal));
+    SDS.value = exists ? prevVal : '';
+  } catch(e) {
+    SDS.innerHTML = '<option value="">获取设备失败</option>';
+  }
+}
+
+function doExportDialog(){
+  const sel = document.getElementById('ELANG');
+  // 保留固定前三项
+  while(sel.options.length > 3) sel.remove(3);
+
+  // 从用户设置里取翻译目标语言（中文名）
+  const translateTo = (G.settings && G.settings.translate_to) || [];
+
+  // 再补充历史里实际出现的语言（防止设置变更后历史里有旧语言）
+  const histLangs = new Set(translateTo);
+  (G.history||[]).forEach(e => Object.keys(e.translations||{}).forEach(l => histLangs.add(l)));
+
+  histLangs.forEach(l => {
+    const o = document.createElement('option');
+    o.value = l;
+    o.textContent = `仅${l}`;
+    sel.appendChild(o);
+  });
+
+  EV.style.display='flex';
+}
+function doExport(fmt){
+  const lang = document.getElementById('ELANG')?.value || 'all';
+  send({action:'export',format:fmt,lang_filter:lang});
+  EV.style.display='none';
+}
+function dlFile(content,fmt){
+  const lang = document.getElementById('ELANG')?.value || 'all';
+  const langSuffix = lang==='all'?'':'_'+lang;
+  const ext={txt:'txt',srt:'srt',json:'json',md:'md'}[fmt]||'txt';
+  const name=`asr_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}${langSuffix}.${ext}`;
+  // 发给后端用原生对话框保存（兼容 pywebview 和浏览器两种模式）
+  send({action:'save_file', filename:name, content:content});
+}
+
+// ── 工具 ──────────────────────────────────────────────────
+function clearAll(){ if(confirm('清空所有字幕和上下文记录？')) send({action:'clear'}); }
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// 点击遮罩关闭对话框
+OV.addEventListener('click',e=>{ if(e.target===OV) closeSettings(); });
+EV.addEventListener('click',e=>{ if(e.target===EV) EV.style.display='none'; });
+
+connect();
+
+// 启动时检查模型是否就绪
+(async function checkModels(){
+  try {
+    const res = await fetch('/api/check_models');
+    const models = await res.json();
+    const missing = Object.entries(models).filter(([,v])=>!v.cached);
+    if(missing.length > 0) showDownloadGuide(models);
+  } catch(e) {}
+})();
+
+function showDownloadGuide(models){
+  const ov = document.getElementById('DL_OVERLAY');
+  const entries = Object.entries(models);
+  const allCached = entries.every(([,v])=>v.cached);
+  if(allCached){ ov.style.display='none'; return; }
+
+  let modelHTML = entries.map(([repo, info])=>{
+    if(info.cached){
+      return `<div class="dl-model">
+        <div class="dl-model-head">
+          <span class="dl-model-name">${info.label}</span>
+          <span class="dl-model-size">${info.size}</span>
+        </div>
+        <div class="dl-cached">✓ 已下载</div>
+      </div>`;
+    }
+    const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<div class="dl-model" id="dlm_${safeId}">
+      <div class="dl-model-head">
+        <span class="dl-model-name">${info.label}</span>
+        <span class="dl-model-size">${info.size}</span>
+      </div>
+      <div class="dl-model-desc">${info.desc}</div>
+      <div class="dl-status" id="dls_${safeId}">等待下载…</div>
+      <div class="dl-progress" id="dlp_${safeId}">
+        <div class="dl-progress-bar" id="dlb_${safeId}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  ov.innerHTML = `
+    <div class="dl-box">
+      <div class="dl-head">
+        <div class="dl-title">欢迎使用 ASR Live</div>
+        <div class="dl-sub">首次使用需要下载 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。</div>
+      </div>
+      <div class="dl-body">${modelHTML}</div>
+      <div class="dl-foot">
+        <button class="dl-btn dl-btn-skip" onclick="skipDownload()">稍后下载，先体验界面</button>
+        <button class="dl-btn dl-btn-primary" id="DL_START_BTN" onclick="startDownloads(${JSON.stringify(Object.entries(models).filter(([,v])=>!v.cached).map(([r])=>r))})">开始下载</button>
+      </div>
+    </div>`;
+  ov.style.display='flex';
+}
+
+let _dlQueue = [], _dlRunning = false;
+
+async function startDownloads(repos){
+  document.getElementById('DL_START_BTN').disabled = true;
+  document.getElementById('DL_START_BTN').textContent = '下载中…';
+  _dlQueue = [...repos];
+  processDownloadQueue();
+}
+
+async function processDownloadQueue(){
+  if(_dlQueue.length === 0){
+    // 全部完成
+    document.getElementById('DL_START_BTN').textContent = '全部完成，进入应用';
+    document.getElementById('DL_START_BTN').disabled = false;
+    document.getElementById('DL_START_BTN').onclick = ()=>{ document.getElementById('DL_OVERLAY').style.display='none'; };
+    return;
+  }
+  const repo = _dlQueue.shift();
+  const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
+  const statusEl = document.getElementById('dls_'+safeId);
+  const progEl   = document.getElementById('dlp_'+safeId);
+  const barEl    = document.getElementById('dlb_'+safeId);
+  if(statusEl) { statusEl.textContent='下载中…'; statusEl.className='dl-status'; }
+  if(progEl)   progEl.style.display='block';
+
+  // 通过 WebSocket 接收进度
+  _currentDlRepo = repo;
+  const res = await fetch('/api/download/'+repo, {method:'POST'});
+  // 进度通过 WS dl_progress 事件接收，见 handle()
+}
+
+let _currentDlRepo = null;
+
+// 在 handle() 里处理下载进度消息（注入到已有 handle 函数）
+const _origHandle = handle;
+
+// 记录 WS 下载消息，追加到 handle 末尾处理
+function handleDlMsg(m){
+  if(!m.type.startsWith('dl_')) return;
+  const repo = m.repo || '';
+  const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
+  const statusEl = document.getElementById('dls_'+safeId);
+  const barEl    = document.getElementById('dlb_'+safeId);
+
+  if(m.type==='dl_start'){
+    if(statusEl) statusEl.textContent = '连接中…';
+  } else if(m.type==='dl_progress'){
+    const line = m.line||'';
+    if(statusEl){ statusEl.textContent = line; statusEl.className='dl-status'; }
+    // 简单进度动画
+    if(barEl){
+      const cur = parseFloat(barEl.style.width)||0;
+      barEl.style.width = Math.min(cur + 0.3, 95)+'%';
+    }
+  } else if(m.type==='dl_done'){
+    if(m.success){
+      if(statusEl){ statusEl.textContent='✓ 下载完成'; statusEl.className='dl-status ok'; }
+      if(barEl) barEl.style.width='100%';
+    } else {
+      if(statusEl){ statusEl.textContent='✗ 下载失败，请检查网络后重试'; statusEl.className='dl-status err'; }
+    }
+    // 继续下一个
+    setTimeout(processDownloadQueue, 500);
+  } else if(m.type==='dl_error'){
+    if(statusEl){ statusEl.textContent='✗ '+(m.msg||'下载失败'); statusEl.className='dl-status err'; }
+    setTimeout(processDownloadQueue, 500);
+  }
+}
+
+// 跳过下载
+function skipDownload(){
+  document.getElementById('DL_OVERLAY').style.display='none';
+}
+</script>
+</body>
+</html>
