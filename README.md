@@ -98,7 +98,7 @@ pip install onnxruntime pywebview
 hf download mlx-community/whisper-large-v3-turbo
 
 # ASR model — highest accuracy (~6 GB, slower)
-hf download mlx-community/whisper-large-v3-mlx
+# hf download mlx-community/whisper-large-v3-mlx
 
 # LLM for correction and translation (~8 GB)
 hf download mlx-community/Qwen3-14B-4bit
