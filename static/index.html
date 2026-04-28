@@ -3,9 +3,367 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASR Live v3</title>
+<title>ASR Live v4.0f</title>
+<script>
+/**
+ * ASR Live – UI language strings
+ * To add a new language: copy the `en` block, rename the key, translate every value.
+ * Keys must stay identical across all languages.
+ */
+const I18N = {
+
+  zh: {
+    /* ── meta ── */
+    langBtnLabel:       'EN',          // label shown on the toggle button (switch TO this)
+    htmlLang:           'zh',
+
+    /* ── topbar ── */
+    btnStart:           '● 开始',
+    btnPause:           '⏸ 暂停',
+    btnResume:          '▶ 继续',
+    btnStop:            '■ 停止',
+    btnExport:          '导出 ▾',
+    btnClear:           '清空',
+    btnSettings:        '设置',
+    btnThemeTitle:      '切换主题',
+    settingsDisabled:   '录音过程中无法修改设置，请先停止录音',
+
+    /* ── status bar ── */
+    statusConnecting:   '连接中…',
+    statusReady:        '就绪',
+    statusRecording:    '识别中 · {whisper} · {llm}',
+    statusPaused:       '已暂停（点继续）',
+    statusReconnecting: '重连中…',
+    statusConnected:    '已连接',
+
+    /* ── sidebar: recording ── */
+    sideRecControl:     '录音控制',
+    recStart:           '开始识别',
+    recRunning:         '识别中…',
+    recPaused:          '已暂停',
+    sidePause:          '⏸ 暂停',
+    sideResume:         '▶ 继续',
+    sideStop:           '■ 停止',
+
+    /* ── sidebar: language ── */
+    sideLangLabel:      '识别语言',
+    langAuto:           '自动',
+    langZH:             '中文',
+    langEN:             '英文',
+    langJA:             '日文',
+    sliderSilence:      '句尾静音',
+    sliderVAD:          'VAD 灵敏度',
+    sliderGain:         '麦克风增益',
+
+    /* ── sidebar: metrics ── */
+    sideMetrics:        '实时指标',
+    metASR:             'ASR 时滞',
+    metLLM:             'LLM 时滞',
+    metTotal:           '合计',
+    metSent:            '句数',
+    metChar:            '字数',
+    metRuntime:         '运行时长',
+
+    /* ── waveform / timer ── */
+    // (timer is numeric, no translation needed)
+
+    /* ── subtitle area ── */
+    emptyHint:          '点击「开始识别」<br>开始实时语音转写',
+    liveProcessing:     'LLM 处理中…',
+
+    /* ── player bar ── */
+    merging:            '正在合并录音…',
+    mergingSegment:     '合并中… 已完成分段 {n}',
+    followLabel:        '跟随',
+    volTitle:           '音量',
+
+    /* ── search bar ── */
+    searchPlaceholder:  '搜索字幕内容…',
+    searchClearTitle:   '清除搜索',
+    btnLatest:          '↓ 最新',
+
+    /* ── settings panel ── */
+    settingsTitle:      '设置',
+    btnSave:            '保存设置',
+    btnCancel:          '取消',
+
+    sectASR:            'ASR 模型',
+    labelWhisper:       'Whisper 模型',
+    whisperHint:        '大=准但慢',
+    whisperCurrent:     '{name}（当前）',
+    whisperNone:        '未找到本地 Whisper 模型',
+    labelLLM:           'LLM 矫正模型',
+    llmHint:            '影响翻译质量',
+    llmLoading:         '加载中…',
+    llmCurrent:         '{name}（当前）',
+    llmNone:            '未找到本地 LLM 模型',
+
+    sectScene:          '场景与术语',
+    labelContext:       '场景描述 / 专业术语',
+    contextHint:        '留空则不启用',
+    contextPlaceholder: '直接列举关键词效果最佳，例如：\n专利答辩，术语：权利要求、说明书、新颖性、创造性、现有技术、从属权利要求\n\n或：医疗会诊，术语：心房颤动、左心室射血分数、冠状动脉旁路移植术、LVEF\n\n或：Tech product review. Key terms: Apple Silicon, Neural Engine, MLX, unified memory',
+    contextDesc:        '同时作为 Whisper 的词汇提示和 LLM 的纠错参考；直接列举术语比描述场景效果更好',
+
+    sectTranslate:      '翻译目标',
+    labelOutputLangs:   '输出语言',
+    outputLangsHint:    '可多选，未选则仅矫正',
+    transDesc:          '中文输入→翻译至选定语言；英/日文输入→同理双向翻译',
+    togZH:              '中文',
+    togEN:              '英文',
+    togJA:              '日文',
+    togKO:              '韩文',
+    togFR:              '法文',
+    togDE:              '德文',
+    togES:              '西班牙文',
+
+    sectVAD:            'VAD · 音频',
+    labelSilence:       '句尾静音阈值',
+    labelVADSens:       'VAD 灵敏度',
+    labelMaxSent:       '最长单句时长',
+    labelCtxSent:       '上下文句数',
+    ctxUnit:            '句',           // unit appended to slider value, e.g. "6句"
+
+    sectAudio:          '音频输入',
+    labelRecSave:       '录音保存',
+    recSaveHint:        '停止时自动保存 MP3',
+    labelBitrate:       'MP3 码率',
+    bitrateHint:        '越高越清晰',
+    bitrate64:          '64 kbps（省空间，约 0.5MB/分钟）',
+    bitrate128:         '128 kbps（标准质量，约 1MB/分钟）',
+    bitrate192:         '192 kbps（高质量，约 1.5MB/分钟）',
+    bitrate320:         '320 kbps（无损级，约 2.5MB/分钟）',
+    labelMic:           '麦克风设备',
+    micDefault:         '系统默认麦克风',
+    micDetecting:       '检测中…',
+    micFailed:          '获取设备失败',
+    micReloadTitle:     '重新检测麦克风',
+
+    sectUI:             '界面',
+    labelFontSize:      '字幕字号',
+    fontSmall:          '小（13px）',
+    fontMedium:         '中（15px）',
+    fontLarge:          '大（17px）',
+    fontXL:             '特大（20px）',
+    labelAutoScroll:    '自动滚动',
+    autoScrollOn:       '开启',
+    autoScrollOff:      '关闭',
+
+    /* ── export dialog ── */
+    exportTitle:        '导出字幕',
+    exportLangLabel:    '导出语言',
+    exportAll:          '全部语言（混合）',
+    exportCorrected:    '仅原文（矫正后）',
+    exportRaw:          '仅原文（ASR 原始）',
+    exportOnlyLang:     '仅{lang}',
+    exportFormatLabel:  '文件格式',
+    exportTxt:          '纯文本 TXT',
+    exportSrt:          'SRT 字幕文件',
+    exportJson:         'JSON（含时间戳）',
+    exportMd:           'Markdown',
+
+    /* ── toasts / alerts ── */
+    clearConfirm:       '清空所有字幕和上下文记录？',
+    toastSaved:         '已保存：{name}',
+    toastRecSaved:      '录音已保存：{name}{size}',
+    scanFailed:         '扫描失败',
+
+    /* ── download guide ── */
+    dlTitle:            '欢迎使用 ASR Live',
+    dlSub:              '首次使用需要下载 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。',
+    dlCached:           '✓ 已下载',
+    dlWaiting:          '等待下载…',
+    dlConnecting:       '连接中…',
+    dlDownloading:      '下载中…',
+    dlDone:             '✓ 下载完成',
+    dlFailed:           '✗ 下载失败，请检查网络后重试',
+    dlError:            '✗ {msg}',
+    dlSkip:             '稍后下载，先体验界面',
+    dlStart:            '开始下载',
+    dlStarting:         '下载中…',
+    dlAllDone:          '全部完成，进入应用',
+
+    /* ── language display names (used in subtitle badges & translation rows) ── */
+    langName: { zh:'中文', en:'英文', ja:'日文', ko:'韩文', fr:'法文', de:'德文', es:'西班牙文' },
+  },
+
+  en: {
+    /* ── meta ── */
+    langBtnLabel:       '中文',
+    htmlLang:           'en',
+
+    /* ── topbar ── */
+    btnStart:           '● Start',
+    btnPause:           '⏸ Pause',
+    btnResume:          '▶ Resume',
+    btnStop:            '■ Stop',
+    btnExport:          'Export ▾',
+    btnClear:           'Clear',
+    btnSettings:        'Settings',
+    btnThemeTitle:      'Toggle theme',
+    settingsDisabled:   'Settings unavailable while recording. Stop first.',
+
+    /* ── status bar ── */
+    statusConnecting:   'Connecting…',
+    statusReady:        'Ready',
+    statusRecording:    'Recording · {whisper} · {llm}',
+    statusPaused:       'Paused (click Resume)',
+    statusReconnecting: 'Reconnecting…',
+    statusConnected:    'Connected',
+
+    /* ── sidebar: recording ── */
+    sideRecControl:     'Recording',
+    recStart:           'Start ASR',
+    recRunning:         'Recognizing…',
+    recPaused:          'Paused',
+    sidePause:          '⏸ Pause',
+    sideResume:         '▶ Resume',
+    sideStop:           '■ Stop',
+
+    /* ── sidebar: language ── */
+    sideLangLabel:      'Input Language',
+    langAuto:           'Auto',
+    langZH:             'Chinese',
+    langEN:             'English',
+    langJA:             'Japanese',
+
+    /* ── sidebar: quick adjust ── */
+    sideQuickAdj:       'Quick Adjust',
+    sliderSilence:      'End Silence',
+    sliderVAD:          'VAD Sensitivity',
+    sliderGain:         'Mic Gain',
+
+    /* ── sidebar: metrics ── */
+    sideMetrics:        'Live Metrics',
+    metASR:             'ASR Latency',
+    metLLM:             'LLM Latency',
+    metTotal:           'Total',
+    metSent:            'Sentences',
+    metChar:            'Characters',
+    metRuntime:         'Runtime',
+
+    /* ── subtitle area ── */
+    emptyHint:          'Click "Start ASR"<br>to begin live transcription',
+    liveProcessing:     'LLM processing…',
+
+    /* ── player bar ── */
+    merging:            'Merging audio…',
+    mergingSegment:     'Merging… segment {n} done',
+    followLabel:        'Follow',
+    volTitle:           'Volume',
+
+    /* ── search bar ── */
+    searchPlaceholder:  'Search subtitles…',
+    searchClearTitle:   'Clear search',
+    btnLatest:          '↓ Latest',
+
+    /* ── settings panel ── */
+    settingsTitle:      'Settings',
+    btnSave:            'Save',
+    btnCancel:          'Cancel',
+
+    sectASR:            'ASR Model',
+    labelWhisper:       'Whisper Model',
+    whisperHint:        'larger = more accurate but slower',
+    whisperCurrent:     '{name} (current)',
+    whisperNone:        'No local Whisper model found',
+    labelLLM:           'LLM Correction Model',
+    llmHint:            'affects translation quality',
+    llmLoading:         'Loading…',
+    llmCurrent:         '{name} (current)',
+    llmNone:            'No local LLM model found',
+
+    sectScene:          'Scene & Terminology',
+    labelContext:       'Scene Description / Terminology',
+    contextHint:        'leave blank to disable',
+    contextPlaceholder: 'List key terms directly for best results, e.g.:\nPatent hearing. Terms: claims, specification, novelty, inventive step, prior art\n\nor: Medical consultation. Terms: atrial fibrillation, LVEF, CABG, ejection fraction\n\nor: 科技产品评测，术语：Apple Silicon、神经引擎、MLX、统一内存',
+    contextDesc:        'Used as vocabulary hint for Whisper and correction reference for LLM — listing terms directly works better than describing the scene.',
+
+    sectTranslate:      'Translation Targets',
+    labelOutputLangs:   'Output Languages',
+    outputLangsHint:    'multi-select; if none selected, only correction is applied',
+    transDesc:          'Chinese input → translated to selected languages; English/Japanese input → bidirectional.',
+    togZH:              'Chinese',
+    togEN:              'English',
+    togJA:              'Japanese',
+    togKO:              'Korean',
+    togFR:              'French',
+    togDE:              'German',
+    togES:              'Spanish',
+
+    sectVAD:            'VAD · Audio',
+    labelSilence:       'End-of-sentence Silence',
+    labelVADSens:       'VAD Sensitivity',
+    labelMaxSent:       'Max Sentence Length',
+    labelCtxSent:       'Context Sentences',
+    ctxUnit:            '',             // English: plain number, no unit suffix
+
+    sectAudio:          'Audio Input',
+    labelRecSave:       'Save Recording',
+    recSaveHint:        'auto-saves MP3 on stop',
+    labelBitrate:       'MP3 Bitrate',
+    bitrateHint:        'higher = better quality',
+    bitrate64:          '64 kbps (compact, ~0.5 MB/min)',
+    bitrate128:         '128 kbps (standard, ~1 MB/min)',
+    bitrate192:         '192 kbps (high quality, ~1.5 MB/min)',
+    bitrate320:         '320 kbps (lossless-grade, ~2.5 MB/min)',
+    labelMic:           'Microphone',
+    micDefault:         'System default microphone',
+    micDetecting:       'Detecting…',
+    micFailed:          'Failed to load devices',
+    micReloadTitle:     'Re-detect microphone',
+
+    sectUI:             'Interface',
+    labelFontSize:      'Subtitle Font Size',
+    fontSmall:          'Small (13px)',
+    fontMedium:         'Medium (15px)',
+    fontLarge:          'Large (17px)',
+    fontXL:             'X-Large (20px)',
+    labelAutoScroll:    'Auto Scroll',
+    autoScrollOn:       'On',
+    autoScrollOff:      'Off',
+
+    /* ── export dialog ── */
+    exportTitle:        'Export Subtitles',
+    exportLangLabel:    'Language',
+    exportAll:          'All languages (mixed)',
+    exportCorrected:    'Source only (corrected)',
+    exportRaw:          'Source only (raw ASR)',
+    exportOnlyLang:     '{lang} only',
+    exportFormatLabel:  'Format',
+    exportTxt:          'Plain Text TXT',
+    exportSrt:          'SRT Subtitle File',
+    exportJson:         'JSON (with timestamps)',
+    exportMd:           'Markdown',
+
+    /* ── toasts / alerts ── */
+    clearConfirm:       'Clear all subtitles and context history?',
+    toastSaved:         'Saved: {name}',
+    toastRecSaved:      'Recording saved: {name}{size}',
+    scanFailed:         'Scan failed',
+
+    /* ── download guide ── */
+    dlTitle:            'Welcome to ASR Live',
+    dlSub:              'First-time setup requires downloading AI models (~11 GB). After that, everything runs fully offline.<br>Ensure network access and do not close the window during download.',
+    dlCached:           '✓ Already downloaded',
+    dlWaiting:          'Waiting…',
+    dlConnecting:       'Connecting…',
+    dlDownloading:      'Downloading…',
+    dlDone:             '✓ Download complete',
+    dlFailed:           '✗ Download failed — check your network and retry',
+    dlError:            '✗ {msg}',
+    dlSkip:             'Skip for now, explore the UI',
+    dlStart:            'Start Download',
+    dlStarting:         'Downloading…',
+    dlAllDone:          'All done — enter app',
+
+    /* ── language display names ── */
+    langName: { zh:'Chinese', en:'English', ja:'Japanese', ko:'Korean', fr:'French', de:'German', es:'Spanish' },
+  },
+
+};
+
+</script>
 <style>
-/* 使用系统字体，无需联网 */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0d0f12;--bg2:#13171c;--bg3:#1a1f26;--bg4:#20262f;
@@ -34,18 +392,21 @@ html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','
 
 /* ── topbar ── */
 .top{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;-webkit-app-region:drag}
-.brand{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:500;color:var(--ac);letter-spacing:.1em;flex-shrink:0}
+.brand{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;font-weight:500;color:var(--ac);letter-spacing:.1em;flex-shrink:0}
 .brand em{color:var(--hi);font-style:normal}
 .tmid{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--hi);flex-shrink:0;transition:all .3s}
 .dot.on{background:var(--ac);box-shadow:0 0 7px var(--ac);animation:dp 1.8s infinite}
 @keyframes dp{0%,100%{opacity:1}55%{opacity:.3}}
-.tst{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tst{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tr{display:flex;gap:6px;flex-shrink:0;-webkit-app-region:no-drag}
-.btn{padding:6px 11px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:12px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
+.btn{padding:6px 11px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:14px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
 .btn:hover{border-color:var(--ac);color:var(--ac)}
 .btn.ron{border-color:var(--red)!important;color:var(--red)!important;background:rgba(224,80,80,.07)!important}
 .btn.act{border-color:var(--ac);color:var(--ac);background:var(--acd)}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.lang-toggle{padding:5px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:13px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;letter-spacing:.06em}
+.lang-toggle:hover{border-color:var(--ac);color:var(--ac)}
 
 /* ── shell ── */
 .shell{display:flex;height:calc(100vh - 48px);overflow:hidden}
@@ -56,135 +417,172 @@ html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','
 .side::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .sg{padding:12px 14px 10px;border-bottom:1px solid var(--b1)}
 .sg:last-child{border-bottom:none;flex:1}
-.slbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.15em;color:var(--hi);text-transform:uppercase;margin-bottom:8px}
-.rbig{width:100%;padding:10px;border-radius:var(--r);border:0.5px solid var(--b2);background:none;color:var(--su);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.slbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.15em;color:var(--hi);text-transform:uppercase;margin-bottom:8px}
+.rbig{width:100%;padding:10px;border-radius:var(--r);border:0.5px solid var(--b2);background:none;color:var(--su);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:15px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
 .rbig.on{border-color:var(--ac);color:var(--ac);background:var(--acd)}
 .rdot{width:7px;height:7px;border-radius:50%;background:var(--hi);transition:all .2s}
 .rbig.on .rdot{background:var(--ac);animation:dp .85s infinite}
 .lrow{display:flex;gap:5px;flex-wrap:wrap}
-.ltag{padding:5px 9px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.ltag{padding:5px 9px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.ltag.asr-lang.on:not(.zh):not(.en):not(.ja){border-color:var(--ac);color:var(--ac);background:rgba(52,211,153,.07)}
 .ltag.zh.on{border-color:var(--zh);color:var(--zh);background:rgba(232,184,75,.07)}
 .ltag.en.on{border-color:var(--en);color:var(--en);background:rgba(93,184,240,.07)}
 .ltag.ja.on{border-color:var(--ja);color:var(--ja);background:rgba(240,120,152,.07)}
 .pr{margin-bottom:10px}
-.prh{display:flex;justify-content:space-between;margin-bottom:4px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su)}
+.prh{display:flex;justify-content:space-between;margin-bottom:4px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su)}
 .prh span{color:var(--ac)}
 input[type=range]{width:100%;height:2px;-webkit-appearance:none;background:var(--b2);border-radius:1px;outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--ac);box-shadow:0 0 4px rgba(0,200,150,.4)}
-.met{display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--b1);font-size:13px}
+.met{display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--b1);font-size:15px}
 .met:last-child{border-bottom:none}
 .mn{color:var(--su)}
-.mv{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--tx)}
+.mv{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--tx)}
 .mv.g{color:var(--grn)}.mv.w{color:#e0a050}.mv.r{color:var(--red)}
 
 /* ── center ── */
 .ctr{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .wave{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:2px;position:relative;flex-shrink:0}
 .wc{width:2px;border-radius:1px;background:var(--ac);opacity:.55;transition:height .07s}
-.wtime{position:absolute;right:16px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;color:var(--su)}
+.wtime{position:absolute;right:16px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su)}
 .sc{flex:1;overflow-y:auto;padding:16px 18px}
 .sc::-webkit-scrollbar{width:3px}
 .sc::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 
 /* ── entry ── */
 .ent{margin-bottom:12px;border-radius:var(--r);border:0.5px solid var(--b1);background:var(--bg2);overflow:hidden;animation:eu .22s ease}
+.ent[data-mp3-offset]{cursor:pointer}
+.ent[data-mp3-offset]:hover{border-color:rgba(0,200,150,.35);background:linear-gradient(135deg,rgba(0,200,150,.04) 0%,transparent 100%)}
 @keyframes eu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ent.zh{border-left:2.5px solid var(--zh)}
 .ent.en{border-left:2.5px solid var(--en)}
 .ent.ja{border-left:2.5px solid var(--ja)}
 .ent.live{border:0.5px solid rgba(0,200,150,.3);border-left:2.5px solid var(--ac)}
 .eHead{display:flex;align-items:center;gap:7px;padding:7px 12px 6px;border-bottom:0.5px solid var(--b1)}
-.badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.07em;padding:2px 7px;border-radius:3px;font-weight:500}
+.badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.07em;padding:2px 7px;border-radius:3px;font-weight:500}
 .badge.zh{background:rgba(232,184,75,.11);color:#b8902a;border:0.5px solid rgba(232,184,75,.2)}
 .badge.en{background:rgba(93,184,240,.11);color:#3a8ab5;border:0.5px solid rgba(93,184,240,.2)}
 .badge.ja{background:rgba(240,120,152,.11);color:#b84d6a;border:0.5px solid rgba(240,120,152,.2)}
-.ets{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--hi)}
-.elat{margin-left:auto;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--hi)}
+.ets{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
+.elat{margin-left:auto;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
 .orig{padding:10px 12px 9px;line-height:1.7;font-size:16px;font-weight:400;color:var(--tx-strong);border-bottom:0.5px solid var(--b1)}
 .cur{display:inline-block;width:2px;height:.88em;background:var(--ac);margin-left:2px;vertical-align:text-bottom;animation:bk .65s infinite}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:0}}
 .tblock{padding:8px 12px}
 .trow{display:flex;gap:8px;align-items:baseline;margin-bottom:4px}
 .trow:last-child{margin-bottom:0}
-.tlbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;min-width:24px;flex-shrink:0;margin-top:1px}
+.tlbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;min-width:24px;flex-shrink:0;margin-top:1px}
 .tt{font-size:14px;line-height:1.6;color:var(--su)}
 .tt.en{color:var(--tt-en)}.tt.ja{color:var(--tt-ja);font-family:'Hiragino Sans','Yu Gothic',sans-serif}.tt.zh{color:var(--tt-zh)}
 
-.empty{text-align:center;padding:60px 20px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--hi);line-height:2.2}
+.empty{text-align:center;padding:60px 20px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--hi);line-height:2.2}
 .toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(10px);
   background:var(--bg2);border:0.5px solid var(--ac);border-radius:8px;
-  padding:10px 18px;font-size:13px;color:var(--ac);
+  padding:10px 18px;font-size:15px;color:var(--ac);
   font-family:ui-monospace,'SF Mono',Menlo,monospace;
   opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hl{background:rgba(255,210,0,.35);border-radius:2px;padding:0 1px;color:inherit}
 :root.light .hl{background:rgba(255,160,0,.3)}
 .sw-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.sw-label{font-size:13px;font-weight:500;color:var(--su)}
+.sw-label{font-size:15px;font-weight:500;color:var(--su)}
 .sw{position:relative;width:40px;height:22px;flex-shrink:0}
 .sw input{opacity:0;width:0;height:0;position:absolute}
 .sw-track{position:absolute;inset:0;border-radius:11px;background:var(--b2);transition:background .2s;cursor:pointer}
 .sw input:checked+.sw-track{background:var(--ac)}
 .sw-track::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .sw input:checked+.sw-track::after{transform:translateX(18px)}
+.sw-sm{width:32px;height:18px}
+.sw-sm .sw-track{border-radius:9px}
+.sw-sm .sw-track::after{width:12px;height:12px;top:3px;left:3px}
+.sw-sm input:checked+.sw-track::after{transform:translateX(14px)}
 
-/* ── ibar ── */
+/* ── mp3 player bar ── */
+.pbar{height:52px;background:var(--bg2);border-top:1px solid var(--b1);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;transition:all .3s}
+.pbar.hidden{display:none}
+.pbar-merge{flex:1;display:flex;align-items:center;gap:10px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su)}
+.pbar-merge .spin{animation:sp .9s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pbar-player{flex:1;display:flex;align-items:center;gap:8px}
+.pbar-play{width:30px;height:30px;border-radius:50%;border:0.5px solid var(--b2);background:none;color:var(--ac);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.pbar-play:hover{border-color:var(--ac);background:var(--acd)}
+.pbar-seek{flex:1;height:3px;-webkit-appearance:none;background:var(--b2);border-radius:2px;outline:none;cursor:pointer;position:relative}
+.pbar-seek::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--ac);box-shadow:0 0 5px rgba(0,200,150,.5)}
+.pbar-time{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--su);white-space:nowrap;min-width:88px;text-align:right}
+.pbar-follow{display:flex;align-items:center;gap:6px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--su);white-space:nowrap;flex-shrink:0}
+.ent.playing{
+  border-color:var(--ac)!important;
+  background:linear-gradient(135deg, rgba(0,200,150,.06) 0%, rgba(0,200,150,.02) 100%)!important;
+  box-shadow:0 0 0 1px rgba(0,200,150,.18), 0 2px 12px rgba(0,200,150,.08)!important;
+}
+.ent.playing .orig{ color:var(--tx-strong) }
+
+/* ── volume ── */
+.vol-wrap{display:flex;align-items:center;gap:0;flex-shrink:0}
+.vol-btn{width:28px;height:28px;border:none;background:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;opacity:.75;transition:opacity .12s}
+.vol-btn:hover{opacity:1}
+.vol-slider-wrap{width:0;overflow:visible;transition:width .2s ease;display:flex;align-items:center;}
+.vol-wrap:hover .vol-slider-wrap,.vol-wrap:focus-within .vol-slider-wrap{width:80px}
+.vol-range{width:66px;margin:0 5px;height:3px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right, var(--ac) 100%, var(--b2) 100%);border-radius:2px;outline:none;cursor:pointer;}
+.vol-range::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--ac);box-shadow:0 0 4px rgba(0,200,150,.4);opacity:0;transition:opacity .15s;}
+.vol-wrap:hover .vol-range::-webkit-slider-thumb,.vol-wrap:focus-within .vol-range::-webkit-slider-thumb{opacity:1}
+
 .ibar{height:46px;background:var(--bg2);border-top:1px solid var(--b1);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0}
-.ibar input{flex:1;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;padding:6px 10px;color:var(--tx);font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:14px;outline:none}
+.ibar input{flex:1;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;padding:6px 10px;color:var(--tx);font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:16px;outline:none}
 .ibar input:focus{border-color:rgba(0,200,150,.3)}
 .ibar input::placeholder{color:var(--hi)}
-.ib{padding:6px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:13px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
+.ib{padding:6px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:15px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;white-space:nowrap}
 .ib:hover{border-color:var(--ac);color:var(--ac)}
 
 /* ── settings overlay ── */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200}
 .sp{width:540px;max-height:88vh;background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
 .sph{padding:14px 18px;border-bottom:0.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.spt{font-weight:500;font-size:14px;color:var(--tx)}
-.scl{width:24px;height:24px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);cursor:pointer;font-size:14px;line-height:24px;text-align:center;transition:all .12s}
+.spt{font-weight:500;font-size:16px;color:var(--tx)}
+.scl{width:24px;height:24px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);cursor:pointer;font-size:16px;line-height:24px;text-align:center;transition:all .12s}
 .scl:hover{border-color:var(--red);color:var(--red)}
 .spb{padding:16px 18px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .spb::-webkit-scrollbar{width:3px}
 .spb::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 .sf{display:flex;flex-direction:column;gap:5px}
 .sf.full{grid-column:1/-1}
-.sfl{font-size:13px;font-weight:500;color:var(--su)}
-.sfl small{font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;margin-left:4px}
-select,.si{width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:14px;outline:none;-webkit-appearance:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
+.sfl{font-size:15px;font-weight:500;color:var(--su)}
+.sfl small{font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;margin-left:4px}
+select,.si{width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:16px;outline:none;-webkit-appearance:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
 select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 .ssr{display:flex;align-items:center;gap:8px}
 .ssr input{flex:1;height:2px}
-.ssc{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--ac);min-width:34px;text-align:right}
-.ssect{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--hi);grid-column:1/-1;padding-top:4px;border-top:0.5px solid var(--b1);margin-top:2px}
+.ssc{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--ac);min-width:34px;text-align:right}
+.ssect{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--hi);grid-column:1/-1;padding-top:4px;border-top:0.5px solid var(--b1);margin-top:2px}
 .togs{display:flex;gap:6px;flex-wrap:wrap}
-.tog{padding:6px 11px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.tog{padding:6px 11px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
 .tog.on{border-color:var(--ac);color:var(--ac);background:var(--acd)}
-.hint{font-size:10px;color:var(--hi);margin-top:2px;line-height:1.5}
+.hint{font-size:12px;color:var(--hi);margin-top:2px;line-height:1.5}
 .spf{padding:12px 18px;border-top:0.5px solid var(--b1);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
-.bsave{padding:7px 18px;border-radius:5px;border:none;background:var(--ac);color:#081a14;font-size:12px;font-weight:500;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
+.bsave{padding:7px 18px;border-radius:5px;border:none;background:var(--ac);color:#081a14;font-size:14px;font-weight:500;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif}
 .bsave:hover{opacity:.85}
-.bcan{padding:7px 14px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:12px;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;transition:all .12s}
+.bcan{padding:7px 14px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:14px;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;transition:all .12s}
 .bcan:hover{color:var(--tx);border-color:var(--tx)}
-/* ── 首次下载引导面板 ── */
+
+/* ── download guide ── */
 .dl-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column}
 .dl-box{width:520px;background:var(--bg2);border:0.5px solid var(--b2);border-radius:12px;overflow:hidden}
 .dl-head{padding:24px 28px 16px;border-bottom:0.5px solid var(--b1)}
-.dl-title{font-size:18px;font-weight:500;color:var(--tx);margin-bottom:6px}
-.dl-sub{font-size:13px;color:var(--su);line-height:1.6}
+.dl-title{font-size:20px;font-weight:500;color:var(--tx);margin-bottom:6px}
+.dl-sub{font-size:15px;color:var(--su);line-height:1.6}
 .dl-body{padding:20px 28px;display:flex;flex-direction:column;gap:14px}
 .dl-model{background:var(--bg3);border:0.5px solid var(--b1);border-radius:8px;padding:14px 16px}
 .dl-model-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.dl-model-name{font-size:14px;font-weight:500;color:var(--tx)}
-.dl-model-size{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--su)}
-.dl-model-desc{font-size:12px;color:var(--su);margin-bottom:10px}
-.dl-status{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;padding:4px 0;color:var(--hi);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-model-name{font-size:16px;font-weight:500;color:var(--tx)}
+.dl-model-size{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--su)}
+.dl-model-desc{font-size:14px;color:var(--su);margin-bottom:10px}
+.dl-status{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;padding:4px 0;color:var(--hi);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dl-status.ok{color:var(--ac)}
 .dl-status.err{color:var(--red)}
 .dl-progress{height:3px;background:var(--b1);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
 .dl-progress-bar{height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s}
-.dl-cached{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ac);font-weight:500}
+.dl-cached{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ac);font-weight:500}
 .dl-foot{padding:16px 28px;border-top:0.5px solid var(--b1);display:flex;gap:10px;justify-content:flex-end}
-.dl-btn{padding:9px 20px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-family:-apple-system,'PingFang SC',sans-serif;font-weight:500}
+.dl-btn{padding:9px 20px;border-radius:6px;border:none;font-size:15px;cursor:pointer;font-family:-apple-system,'PingFang SC',sans-serif;font-weight:500}
 .dl-btn-primary{background:var(--ac);color:#081a14}
 .dl-btn-primary:hover{opacity:.85}
 .dl-btn-primary:disabled{opacity:.4;cursor:not-allowed}
@@ -194,22 +592,24 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 </head>
 <body>
 
-<!-- topbar -->
-<!-- 首次下载引导面板（动态生成） -->
 <div class="dl-overlay" id="DL_OVERLAY" style="display:none"></div>
 
+<!-- topbar -->
 <div class="top">
-  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v3</span></div>
+  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.0f</span></div>
   <div class="tmid">
     <div class="dot" id="DOT"></div>
-    <span class="tst" id="TST">连接中…</span>
+    <span class="tst" id="TST"></span>
   </div>
   <div class="tr">
-    <button class="btn" id="RBT" onclick="toggleRec()">● 开始</button>
-    <button class="btn" onclick="doExportDialog()">导出 ▾</button>
-    <button class="btn" onclick="clearAll()">清空</button>
-    <button class="btn" id="THMBTN" onclick="toggleTheme()" title="切换主题">🌙</button>
-    <button class="btn act" onclick="openSettings()">设置</button>
+    <button class="btn" id="RBT" onclick="toggleRec()"></button>
+    <button class="btn" id="RPAUSE" onclick="togglePause()" style="display:none"></button>
+    <button class="btn ron" id="RSTOP" onclick="stopRec()" style="display:none"></button>
+    <button class="btn" id="EXPORTBTN" onclick="doExportDialog()"></button>
+    <button class="btn" id="CLEARBTN" onclick="clearAll()"></button>
+    <button class="btn" id="THMBTN" onclick="toggleTheme()">🌙</button>
+    <button class="lang-toggle" id="LANGBTN" onclick="toggleUILang()"></button>
+    <button class="btn act" id="SETTINGSBTN" onclick="openSettings()"></button>
   </div>
 </div>
 
@@ -218,40 +618,52 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
   <!-- sidebar -->
   <div class="side">
     <div class="sg">
-      <div class="slbl">录音控制</div>
+      <div class="slbl" id="S_REC_CTRL"></div>
       <button class="rbig" id="SRB" onclick="toggleRec()">
-        <div class="rdot"></div><span id="SRL">开始识别</span>
+        <div class="rdot"></div><span id="SRL"></span>
       </button>
+      <div id="SREC_CTRL" style="display:none;gap:5px;margin-top:6px;display:none">
+        <button class="rbig" id="SPAUSE" onclick="togglePause()" style="font-size:14px;padding:7px">
+          <span id="SPRL"></span>
+        </button>
+        <button class="rbig" onclick="stopRec()" id="SSTOP" style="font-size:14px;padding:7px;border-color:var(--red);color:var(--red)"></button>
+      </div>
     </div>
     <div class="sg">
-      <div class="slbl">识别语言</div>
+      <div class="slbl" id="S_LANG_LABEL"></div>
       <div class="lrow">
-        <div class="ltag zh on" onclick="this.classList.toggle('on')">中文</div>
-        <div class="ltag en on" onclick="this.classList.toggle('on')">英文</div>
-        <div class="ltag ja on" onclick="this.classList.toggle('on')">日文</div>
+        <div class="ltag asr-lang on"  id="TAG_AUTO" data-asr-lang=""   onclick="setAsrLang(this)"></div>
+        <div class="ltag zh asr-lang"  id="TAG_ZH"   data-asr-lang="zh" onclick="setAsrLang(this)"></div>
+        <div class="ltag en asr-lang"  id="TAG_EN"   data-asr-lang="en" onclick="setAsrLang(this)"></div>
+        <div class="ltag ja asr-lang"  id="TAG_JA"   data-asr-lang="ja" onclick="setAsrLang(this)"></div>
       </div>
     </div>
     <div class="sg">
-      <div class="slbl">快速调节</div>
+      <div class="slbl" id="S_QUICK_ADJ"></div>
       <div class="pr">
-        <div class="prh">句尾静音 <span id="SV">0.6s</span></div>
+        <div class="prh"><span id="SL_SILENCE_LBL"></span> <span id="SV">0.6s</span></div>
         <input type="range" min="2" max="20" value="6" step="1"
-          oninput="SV.textContent=(+this.value/10).toFixed(1)+'s';queueSettings({silence_s:+this.value/10})">
+          id="SLIDER_SILENCE" oninput="SV.textContent=(+this.value/10).toFixed(1)+'s';queueSettings({silence_s:+this.value/10})">
       </div>
       <div class="pr">
-        <div class="prh">VAD 灵敏度 <span id="VV">0.45</span></div>
+        <div class="prh"><span id="SL_VAD_LBL"></span> <span id="VV">0.45</span></div>
         <input type="range" min="20" max="80" value="45" step="1"
-          oninput="VV.textContent=(+this.value/100).toFixed(2);queueSettings({vad_threshold:+this.value/100})">
+          id="SLIDER_VAD" oninput="VV.textContent=(+this.value/100).toFixed(2);queueSettings({vad_threshold:+this.value/100})">
+      </div>
+      <div class="pr">
+        <div class="prh"><span id="SL_GAIN_LBL"></span> <span id="GV">1.5×</span></div>
+        <input type="range" min="10" max="40" value="15" step="1"
+          id="SLIDER_GAIN" oninput="GV.textContent=(+this.value/10).toFixed(1)+'×';queueSettings({mic_gain:+this.value/10})">
       </div>
     </div>
     <div class="sg">
-      <div class="slbl">实时指标</div>
-      <div class="met"><span class="mn">ASR 时滞</span><span class="mv g" id="MA">—</span></div>
-      <div class="met"><span class="mn">LLM 时滞</span><span class="mv g" id="ML">—</span></div>
-      <div class="met"><span class="mn">合计</span><span class="mv g" id="MT">—</span></div>
-      <div class="met"><span class="mn">句数</span><span class="mv" id="MC">0</span></div>
-      <div class="met"><span class="mn">字数</span><span class="mv" id="MCH">0</span></div>
-      <div class="met"><span class="mn">运行时长</span><span class="mv" id="MRT">—</span></div>
+      <div class="slbl" id="S_METRICS"></div>
+      <div class="met"><span class="mn" id="M_ASR"></span><span class="mv g" id="MA">—</span></div>
+      <div class="met"><span class="mn" id="M_LLM"></span><span class="mv g" id="ML">—</span></div>
+      <div class="met"><span class="mn" id="M_TOT"></span><span class="mv g" id="MT">—</span></div>
+      <div class="met"><span class="mn" id="M_SENT"></span><span class="mv" id="MC">0</span></div>
+      <div class="met"><span class="mn" id="M_CHAR"></span><span class="mv" id="MCH">0</span></div>
+      <div class="met"><span class="mn" id="M_RUN"></span><span class="mv" id="MRT">—</span></div>
     </div>
   </div>
 
@@ -261,77 +673,96 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       <span class="wtime" id="WT">00:00:00</span>
     </div>
     <div class="sc" id="SC">
-      <div class="empty" id="HINT">点击「开始识别」<br>开始实时语音转写</div>
+      <div class="empty" id="HINT"></div>
+    </div>
+    <!-- mp3 player bar -->
+    <div class="pbar hidden" id="PBAR">
+      <div class="pbar-merge" id="PBAR_MERGE">
+        <span class="spin">⟳</span><span id="PBAR_MERGE_TXT"></span>
+      </div>
+      <div class="pbar-player" id="PBAR_PLAYER" style="display:none">
+        <button class="pbar-play" id="PBAR_BTN" onclick="playerToggle()">▶</button>
+        <input class="pbar-seek" type="range" id="PBAR_SEEK" min="0" max="100" value="0" step="0.1"
+          oninput="playerSeek(this.value)" onmousedown="playerSeeking=true" onmouseup="playerSeeking=false">
+        <span class="pbar-time" id="PBAR_TIME">0:00 / 0:00</span>
+        <div class="vol-wrap" id="VOL_WRAP">
+          <button class="vol-btn" id="VOL_BTN" onclick="toggleMute()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/> <path d="M12.5 3.5C14 4.8 15 6.3 15 8C15 9.7 14 11.2 12.5 12.5" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+          <div class="vol-slider-wrap">
+            <input class="vol-range" type="range" id="VOL_SLIDER"
+              min="0" max="100" value="100" step="1" oninput="setVolume(this.value)">
+          </div>
+        </div>
+        <div class="pbar-follow">
+          <label class="sw sw-sm">
+            <input type="checkbox" id="FOLLOW_SW" onchange="followModeChanged()" checked>
+            <div class="sw-track"></div>
+          </label>
+          <span id="FOLLOW_LBL"></span>
+        </div>
+      </div>
     </div>
     <div class="ibar">
       <div style="position:relative;flex:1;display:flex;align-items:center">
-        <input type="text" placeholder="搜索字幕内容…" oninput="searchEntries(this.value)" id="SB"
-          style="width:100%;padding-right:28px">
-        <button id="SBCLR" onclick="clearSearch()" title="清除搜索"
-          style="position:absolute;right:8px;border:none;background:none;color:var(--hi);font-size:14px;cursor:pointer;line-height:1;padding:0;display:none">✕</button>
+        <input type="text" id="SB" oninput="searchEntries(this.value)" style="width:100%;padding-right:28px">
+        <button id="SBCLR" onclick="clearSearch()"
+          style="position:absolute;right:8px;border:none;background:none;color:var(--hi);font-size:16px;cursor:pointer;line-height:1;padding:0;display:none">✕</button>
       </div>
-      <button class="ib" onclick="autoScroll=true;scrollBot()">↓ 最新</button>
+      <button class="ib" id="LATESTBTN" onclick="autoScroll=true;scrollBot()"></button>
     </div>
   </div>
 
 </div>
 
-<!-- settings -->
+<!-- settings panel -->
 <div class="ov" id="OV" style="display:none">
   <div class="sp">
     <div class="sph">
-      <span class="spt">设置</span>
+      <span class="spt" id="SP_TITLE"></span>
       <button class="scl" onclick="closeSettings()">✕</button>
     </div>
     <div class="spb" id="SPB">
 
-      <div class="ssect">ASR 模型</div>
+      <div class="ssect" id="SP_SECT_ASR"></div>
 
       <div class="sf">
-        <div class="sfl">Whisper 模型 <small>大=准但慢</small></div>
-        <select id="SW">
-          <option value="mlx-community/whisper-large-v3-turbo">large-v3-turbo fp16（当前）</option>
-          <option value="mlx-community/whisper-large-v3-turbo-q4">large-v3-turbo q4（更小）</option>
-          <option value="mlx-community/whisper-large-v3-mlx">large-v3 原精度（最准）</option>
-          <option value="mlx-community/whisper-medium-mlx-q4">medium q4（省内存）</option>
-        </select>
+        <div class="sfl" id="SP_WHISPER_LBL"></div>
+        <select id="SW"><option value=""></option></select>
       </div>
 
       <div class="sf">
-        <div class="sfl">LLM 矫正模型 <small>影响翻译质量</small></div>
-        <select id="SL"><option value="">加载中…</option></select>
+        <div class="sfl" id="SP_LLM_LBL"></div>
+        <select id="SL"><option value=""></option></select>
       </div>
 
-      <div class="ssect">场景与术语</div>
+      <div class="ssect" id="SP_SECT_SCENE"></div>
 
       <div class="sf full">
-        <div class="sfl">场景描述 / 专业术语 <small>留空则不启用</small></div>
+        <div class="sfl" id="SP_CONTEXT_LBL"></div>
         <textarea id="SCP" rows="4"
-          placeholder="例如：这是一段医疗会诊对话，涉及以下术语：心房颤动、左心室射血分数、冠状动脉旁路移植术&#10;&#10;或：This is a tech product review. Key terms: Apple Silicon, Neural Engine, MLX framework, unified memory"
-          style="width:100%;padding:8px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:13px;outline:none;resize:vertical;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;line-height:1.6"></textarea>
-        <div class="hint">同时作为 Whisper 的词汇提示和 LLM 矫正的参考，对专业名词识别有显著提升</div>
+          style="width:100%;padding:8px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:15px;outline:none;resize:vertical;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;line-height:1.6"></textarea>
+        <div class="hint" id="SP_CONTEXT_DESC"></div>
       </div>
 
-      <div class="ssect">翻译目标</div>
+      <div class="ssect" id="SP_SECT_TRANS"></div>
 
       <div class="sf full">
-        <div class="sfl">输出语言 <small>可多选，未选则仅矫正</small></div>
+        <div class="sfl" id="SP_OUTLANG_LBL"></div>
         <div class="togs" id="TLOGS">
-          <div class="tog on" data-lang="中文">中文</div>
-          <div class="tog on" data-lang="英文">英文</div>
-          <div class="tog on" data-lang="日文">日文</div>
-          <div class="tog" data-lang="韩文">韩文</div>
-          <div class="tog" data-lang="法文">法文</div>
-          <div class="tog" data-lang="德文">德文</div>
-          <div class="tog" data-lang="西班牙文">西班牙文</div>
+          <div class="tog on" data-lang-key="togZH" id="TOG_ZH"></div>
+          <div class="tog on" data-lang-key="togEN" id="TOG_EN"></div>
+          <div class="tog on" data-lang-key="togJA" id="TOG_JA"></div>
+          <div class="tog" data-lang-key="togKO" id="TOG_KO"></div>
+          <div class="tog" data-lang-key="togFR" id="TOG_FR"></div>
+          <div class="tog" data-lang-key="togDE" id="TOG_DE"></div>
+          <div class="tog" data-lang-key="togES" id="TOG_ES"></div>
         </div>
-        <div class="hint">中文输入→翻译至选定语言；英/日文输入→同理双向翻译</div>
+        <div class="hint" id="SP_TRANS_DESC"></div>
       </div>
 
-      <div class="ssect">VAD · 音频</div>
+      <div class="ssect" id="SP_SECT_VAD"></div>
 
       <div class="sf">
-        <div class="sfl">句尾静音阈值</div>
+        <div class="sfl" id="SP_SILENCE_LBL"></div>
         <div class="ssr">
           <input type="range" min="2" max="20" value="6" step="1" id="SSL"
             oninput="this.nextElementSibling.textContent=(+this.value/10).toFixed(1)+'s'">
@@ -340,7 +771,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       </div>
 
       <div class="sf">
-        <div class="sfl">VAD 灵敏度</div>
+        <div class="sfl" id="SP_VAD_LBL"></div>
         <div class="ssr">
           <input type="range" min="20" max="80" value="45" step="1" id="SVL"
             oninput="this.nextElementSibling.textContent=(+this.value/100).toFixed(2)">
@@ -349,7 +780,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       </div>
 
       <div class="sf">
-        <div class="sfl">最长单句时长</div>
+        <div class="sfl" id="SP_MAXSENT_LBL"></div>
         <div class="ssr">
           <input type="range" min="5" max="40" value="20" step="1" id="SML"
             oninput="this.nextElementSibling.textContent=this.value+'s'">
@@ -358,19 +789,22 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       </div>
 
       <div class="sf">
-        <div class="sfl">上下文句数</div>
+        <div class="sfl" id="SP_CTXSENT_LBL"></div>
         <div class="ssr">
           <input type="range" min="1" max="12" value="6" step="1" id="SCL"
-            oninput="this.nextElementSibling.textContent=this.value+'句'">
-          <span class="ssc">6句</span>
+            oninput="this.nextElementSibling.textContent=this.value+(T('ctxUnit'))">
+          <span class="ssc" id="CTX_VAL">6</span>
         </div>
       </div>
 
-      <div class="ssect">音频输入</div>
+      <div class="ssect" id="SP_SECT_AUDIO"></div>
 
       <div class="sf full">
         <div class="sw-row">
-          <span class="sw-label">录音保存 <small style="font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10px;margin-left:4px">停止时自动保存 MP3</small></span>
+          <span class="sw-label">
+            <span id="SP_RECSAVE_LBL"></span>
+            <small id="SP_RECSAVE_HINT" style="font-weight:400;color:var(--hi);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;margin-left:4px"></small>
+          </span>
           <label class="sw">
             <input type="checkbox" id="SREC" checked onchange="
               const row=document.getElementById('SBITRATE_ROW');
@@ -382,79 +816,77 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       </div>
 
       <div class="sf" id="SBITRATE_ROW">
-        <div class="sfl">MP3 码率 <small>越高越清晰</small></div>
+        <div class="sfl" id="SP_BITRATE_LBL"></div>
         <select id="SBIT">
-          <option value="64">64 kbps（省空间，约 0.5MB/分钟）</option>
-          <option value="128">128 kbps（标准质量，约 1MB/分钟）</option>
-          <option value="192" selected>192 kbps（高质量，约 1.5MB/分钟）</option>
-          <option value="320">320 kbps（无损级，约 2.5MB/分钟）</option>
+          <option value="64" id="OPT_BR64"></option>
+          <option value="128" id="OPT_BR128"></option>
+          <option value="192" selected id="OPT_BR192"></option>
+          <option value="320" id="OPT_BR320"></option>
         </select>
       </div>
 
       <div class="sf full">
-        <div class="sfl">麦克风设备</div>
+        <div class="sfl" id="SP_MIC_LBL"></div>
         <div style="display:flex;gap:6px;align-items:center">
-          <select id="SDS" style="flex:1"><option value="">加载中…</option></select>
-          <button id="RDEVBTN" onclick="reloadDevices()" title="重新检测麦克风"
-            style="flex-shrink:0;width:34px;height:34px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center"
+          <select id="SDS" style="flex:1"><option value=""></option></select>
+          <button id="RDEVBTN" onclick="reloadDevices()"
+            style="flex-shrink:0;width:34px;height:34px;border-radius:5px;border:0.5px solid var(--b2);background:none;color:var(--su);font-size:18px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center"
             onmouseover="this.style.borderColor='var(--ac)';this.style.color='var(--ac)'"
-            onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--su)'">
-            ↻
-          </button>
+            onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--su)'">↻</button>
         </div>
       </div>
 
-      <div class="ssect">界面</div>
+      <div class="ssect" id="SP_SECT_UI"></div>
 
       <div class="sf">
-        <div class="sfl">字幕字号</div>
+        <div class="sfl" id="SP_FONTSIZE_LBL"></div>
         <select id="SFS">
-          <option value="13">小（13px）</option>
-          <option value="15" selected>中（15px）</option>
-          <option value="17">大（17px）</option>
-          <option value="20">特大（20px）</option>
+          <option value="13" id="OPT_FS13"></option>
+          <option value="15" selected id="OPT_FS15"></option>
+          <option value="17" id="OPT_FS17"></option>
+          <option value="20" id="OPT_FS20"></option>
         </select>
       </div>
 
       <div class="sf">
-        <div class="sfl">自动滚动</div>
+        <div class="sfl" id="SP_AUTOSCROLL_LBL"></div>
         <select id="SAS">
-          <option value="1" selected>开启</option>
-          <option value="0">关闭</option>
+          <option value="1" selected id="OPT_AS1"></option>
+          <option value="0" id="OPT_AS0"></option>
         </select>
       </div>
 
     </div>
     <div class="spf">
-      <button class="bcan" onclick="closeSettings()">取消</button>
-      <button class="bsave" onclick="saveSettings()">保存设置</button>
+      <button class="bcan" id="SP_CANCEL" onclick="closeSettings()"></button>
+      <button class="bsave" id="SP_SAVE" onclick="saveSettings()"></button>
     </div>
   </div>
 </div>
 
-<!-- export menu -->
+<!-- export dialog -->
 <div class="ov" id="EV" style="display:none">
   <div style="background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;width:320px;overflow:hidden">
     <div style="padding:14px 18px;border-bottom:0.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between">
-      <span style="font-weight:500;color:var(--tx)">导出字幕</span>
+      <span style="font-weight:500;color:var(--tx)" id="EV_TITLE"></span>
       <button class="scl" onclick="EV.style.display='none'">✕</button>
     </div>
     <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
       <div>
-        <div style="font-size:11px;font-weight:500;color:var(--su);margin-bottom:6px;">导出语言</div>
-        <select id="ELANG" style="width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:13px;outline:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif">
-          <option value="all">全部语言（混合）</option>
-          <option value="corrected">仅原文（矫正后）</option>
-          <option value="raw">仅原文（ASR 原始）</option>
+        <div style="font-size:13px;font-weight:500;color:var(--su);margin-bottom:6px;" id="EV_LANG_LBL"></div>
+        <select id="ELANG" style="width:100%;padding:7px 10px;background:var(--bg3);border:0.5px solid var(--b2);border-radius:5px;color:var(--tx);font-size:15px;outline:none;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif">
+          <option value="all" id="EV_OPT_ALL"></option>
+          <option value="corrected" id="EV_OPT_CORR"></option>
+          <option value="raw" id="EV_OPT_RAW"></option>
         </select>
       </div>
       <div style="border-top:0.5px solid var(--b1);padding-top:10px;">
-        <div style="font-size:11px;font-weight:500;color:var(--su);margin-bottom:6px;">文件格式</div>
+        <div style="font-size:13px;font-weight:500;color:var(--su);margin-bottom:6px;" id="EV_FMT_LBL"></div>
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('txt')">纯文本 TXT</button>
-          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('srt')">SRT 字幕文件</button>
-          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('json')">JSON（含时间戳）</button>
-          <button class="btn" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('md')">Markdown</button>
+          <button class="btn" id="EV_TXT" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('txt')"></button>
+          <button class="btn" id="EV_SRT" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('srt')"></button>
+          <button class="btn" id="EV_JSON" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('json')"></button>
+          <button class="btn" id="EV_MD" style="width:100%;text-align:left;padding:8px 12px" onclick="doExport('md')"></button>
         </div>
       </div>
     </div>
@@ -462,14 +894,171 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 </div>
 
 <script>
+// ── i18n ────────────────────────────────────────────────────
+let _uiLang = localStorage.getItem('asrlive_uilang') || 'zh';
+function T(key){ return (I18N[_uiLang]||I18N.zh)[key] ?? key; }
+function TL(key){ return T('langName')[key] || key; } // language display name
+
+function applyUILang(){
+  const t = I18N[_uiLang];
+  document.documentElement.lang = t.htmlLang;
+
+  // toggle button
+  _el('LANGBTN').textContent = t.langBtnLabel;
+
+  // topbar
+  _el('RBT').textContent      = t.btnStart;
+  _el('EXPORTBTN').textContent = t.btnExport;
+  _el('CLEARBTN').textContent  = t.btnClear;
+  _el('THMBTN').title          = t.btnThemeTitle;
+  _el('SETTINGSBTN').textContent = t.btnSettings;
+  _el('RSTOP').textContent = t.btnStop;
+  // RPAUSE / RSTOP text depend on state — handled in _applyRecUI
+
+  // sidebar labels
+  _el('S_REC_CTRL').textContent = t.sideRecControl;
+  _el('S_LANG_LABEL').textContent = t.sideLangLabel;
+  _el('S_QUICK_ADJ').textContent  = t.sideQuickAdj;
+  _el('S_METRICS').textContent    = t.sideMetrics;
+  _el('SL_SILENCE_LBL').textContent = t.sliderSilence;
+  _el('SL_VAD_LBL').textContent     = t.sliderVAD;
+  _el('SL_GAIN_LBL').textContent    = t.sliderGain;
+  _el('M_ASR').textContent  = t.metASR;
+  _el('M_LLM').textContent  = t.metLLM;
+  _el('M_TOT').textContent  = t.metTotal;
+  _el('M_SENT').textContent = t.metSent;
+  _el('M_CHAR').textContent = t.metChar;
+  _el('M_RUN').textContent  = t.metRuntime;
+
+  // sidebar language tags
+  _el('TAG_AUTO').textContent = t.langAuto || '自动';
+  _el('TAG_ZH').textContent = t.langZH;
+  _el('TAG_EN').textContent = t.langEN;
+  _el('TAG_JA').textContent = t.langJA;
+
+  // sidebar record button
+  _el('SSTOP').textContent = t.sideStop;
+  _applyRecUI(); // also updates SRL / SPRL / RPAUSE / RSTOP
+
+  // empty hint
+  const hint = _el('HINT'); if(hint) hint.innerHTML = t.emptyHint;
+
+  // player bar
+  _el('FOLLOW_LBL').textContent = t.followLabel;
+  _el('VOL_BTN').title          = t.volTitle;
+  const pmt = _el('PBAR_MERGE_TXT');
+  if(pmt) pmt.textContent = t.merging;
+
+  // search bar
+  const sb = _el('SB'); if(sb) sb.placeholder = t.searchPlaceholder;
+  const sbClr = _el('SBCLR'); if(sbClr) sbClr.title = t.searchClearTitle;
+  _el('LATESTBTN').textContent = t.btnLatest;
+
+  // settings panel
+  _el('SP_TITLE').textContent       = t.settingsTitle;
+  _el('SP_CANCEL').textContent      = t.btnCancel;
+  _el('SP_SAVE').textContent        = t.btnSave;
+  _el('SP_SECT_ASR').textContent    = t.sectASR;
+  _el('SP_WHISPER_LBL').innerHTML   = t.labelWhisper + `<small>${t.whisperHint}</small>`;
+  _el('SP_LLM_LBL').innerHTML       = t.labelLLM + `<small>${t.llmHint}</small>`;
+  _el('SP_SECT_SCENE').textContent  = t.sectScene;
+  _el('SP_CONTEXT_LBL').innerHTML   = t.labelContext + `<small>${t.contextHint}</small>`;
+  _el('SP_CONTEXT_DESC').textContent = t.contextDesc;
+  const scp = _el('SCP'); if(scp) scp.placeholder = t.contextPlaceholder;
+  _el('SP_SECT_TRANS').textContent  = t.sectTranslate;
+  _el('SP_OUTLANG_LBL').innerHTML   = t.labelOutputLangs + `<small>${t.outputLangsHint}</small>`;
+  _el('SP_TRANS_DESC').textContent  = t.transDesc;
+  _el('SP_SECT_VAD').textContent    = t.sectVAD;
+  _el('SP_SILENCE_LBL').textContent = t.labelSilence;
+  _el('SP_VAD_LBL').textContent     = t.labelVADSens;
+  _el('SP_MAXSENT_LBL').textContent = t.labelMaxSent;
+  _el('SP_CTXSENT_LBL').textContent = t.labelCtxSent;
+  _el('SP_SECT_AUDIO').textContent  = t.sectAudio;
+  _el('SP_RECSAVE_LBL').textContent = t.labelRecSave;
+  _el('SP_RECSAVE_HINT').textContent = t.recSaveHint;
+  _el('SP_BITRATE_LBL').innerHTML   = t.labelBitrate + `<small>${t.bitrateHint}</small>`;
+  _el('OPT_BR64').textContent  = t.bitrate64;
+  _el('OPT_BR128').textContent = t.bitrate128;
+  _el('OPT_BR192').textContent = t.bitrate192;
+  _el('OPT_BR320').textContent = t.bitrate320;
+  _el('SP_MIC_LBL').textContent     = t.labelMic;
+  _el('RDEVBTN').title              = t.micReloadTitle;
+  _el('SP_SECT_UI').textContent     = t.sectUI;
+  _el('SP_FONTSIZE_LBL').textContent = t.labelFontSize;
+  _el('OPT_FS13').textContent = t.fontSmall;
+  _el('OPT_FS15').textContent = t.fontMedium;
+  _el('OPT_FS17').textContent = t.fontLarge;
+  _el('OPT_FS20').textContent = t.fontXL;
+  _el('SP_AUTOSCROLL_LBL').textContent = t.labelAutoScroll;
+  _el('OPT_AS1').textContent = t.autoScrollOn;
+  _el('OPT_AS0').textContent = t.autoScrollOff;
+
+  // translation target toggles
+  document.querySelectorAll('#TLOGS .tog[data-lang-key]').forEach(el => {
+    el.textContent = t[el.dataset.langKey] || el.dataset.langKey;
+  });
+
+  // export dialog
+  _el('EV_TITLE').textContent    = t.exportTitle;
+  _el('EV_LANG_LBL').textContent = t.exportLangLabel;
+  _el('EV_OPT_ALL').textContent  = t.exportAll;
+  _el('EV_OPT_CORR').textContent = t.exportCorrected;
+  _el('EV_OPT_RAW').textContent  = t.exportRaw;
+  _el('EV_FMT_LBL').textContent  = t.exportFormatLabel;
+  _el('EV_TXT').textContent      = t.exportTxt;
+  _el('EV_SRT').textContent      = t.exportSrt;
+  _el('EV_JSON').textContent     = t.exportJson;
+  _el('EV_MD').textContent       = t.exportMd;
+
+  // status bar (only update known idle strings)
+  const tst = _el('TST');
+  if(tst && (recState==='idle'||recState==='ready')) tst.textContent = t.statusReady;
+  if(tst && recState==='idle' && tst.textContent==='') tst.textContent = t.statusConnecting;
+}
+
+// ── ASR 识别语言锁定 ──────────────────────────────────────────
+// lang: "" = 自动检测, "zh"/"en"/"ja" = 锁定该语言
+function setAsrLang(el) {
+  const lang = el.dataset.asrLang || null;
+  // 单选：取消其他按钮的 on 状态
+  document.querySelectorAll('.asr-lang').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  // 发送给后端
+  send({ action: 'update_settings', settings: { asr_language: lang || null } });
+}
+
+function applyAsrLangUI(lang) {
+  // 根据 settings.asr_language 恢复按钮选中态
+  document.querySelectorAll('.asr-lang').forEach(t => t.classList.remove('on'));
+  const active = lang
+    ? document.querySelector(`.asr-lang[data-asr-lang="${lang}"]`)
+    : _el('TAG_AUTO');
+  if (active) active.classList.add('on');
+}
+
+function toggleUILang(){
+  _uiLang = _uiLang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('asrlive_uilang', _uiLang);
+  applyUILang();
+}
+
+function _el(id){ return document.getElementById(id); }
+
 // ── WebSocket ──────────────────────────────────────────────
 let ws, recSec=0, recTi, sentCnt=0, charCnt=0, autoScroll=true;
-
 const G = {};
+
+// states: 'idle' | 'recording' | 'paused' | 'merging' | 'ready'
+let recState = 'idle';
+let _modelReady = false;  // true only after server sends {ready:true}
+
+// Wall-clock ms at the moment the user clicked Start.
+// Used to compute subtitle offset relative to MP3 start.
+let _recStartWallMs = null;
 
 let _toastTimer;
 function showToast(msg){
-  let t = document.getElementById('TOAST');
+  let t = _el('TOAST');
   if(!t){ t=document.createElement('div'); t.id='TOAST'; t.className='toast'; document.body.appendChild(t); }
   t.textContent = msg;
   t.classList.add('show');
@@ -479,97 +1068,361 @@ function showToast(msg){
 
 function toggleTheme(){
   const isLight = document.documentElement.classList.toggle('light');
-  document.getElementById('THMBTN').textContent = isLight ? '🌑' : '🌙';
+  _el('THMBTN').textContent = isLight ? '🌑' : '🌙';
   localStorage.setItem('asrlive_theme', isLight ? 'light' : 'dark');
 }
-
-// 恢复上次主题
 (function(){
   const saved = localStorage.getItem('asrlive_theme');
-  if(saved === 'light'){
+  if(saved==='light'){
     document.documentElement.classList.add('light');
-    // THMBTN 此时还没渲染，等 DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', () => {
-      const b = document.getElementById('THMBTN');
-      if(b) b.textContent = '🌑';
-    });
+    document.addEventListener('DOMContentLoaded', ()=>{ const b=_el('THMBTN'); if(b) b.textContent='🌑'; });
   }
 })();
 
 function connect(){
   ws = new WebSocket(`ws://${location.host}/ws`);
-  ws.onopen = () => { MRT.textContent='已连接'; };
-  ws.onclose = () => { MRT.textContent='重连中…'; setTimeout(connect, 2000); };
+  ws.onopen  = () => { _el('MRT').textContent = T('statusConnected'); };
+  ws.onclose = () => { _el('MRT').textContent = T('statusReconnecting'); setTimeout(connect, 2000); };
   ws.onmessage = e => handle(JSON.parse(e.data));
 }
-
 function send(o){ if(ws&&ws.readyState===1) ws.send(JSON.stringify(o)); }
 
 function handle(m){
-  if(m.type==='init'){ G.settings=m.settings||{};
+  if(m.type==='init'){
+    G.settings = m.settings||{};
     applySettings(m.settings||{});
+    applyAsrLangUI((m.settings||{}).asr_language || null);
     if(m.recording) setRec(true);
     (m.history||[]).forEach(addEntry);
   }
   else if(m.type==='status'){
-    TST.textContent=m.text;
-    if(m.ready) DOT.classList.add('on');
+    TST.textContent = m.text;
+    if(m.ready){
+      DOT.classList.add('on');
+      _modelReady = true;
+      _applyRecUI();
+    }
   }
-  else if(m.type==='recording') setRec(m.value);
-  else if(m.type==='asr_partial') showLive(m.raw,m.lang,m.asr_ms);
-  else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms,m.llm_ms); }
+  else if(m.type==='recording') setRec(m.value, m);
+  else if(m.type==='asr_partial') showLive(m.raw, m.lang, m.asr_ms);
+  else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms, m.llm_ms); }
   else if(m.type==='cleared'){
-    SC.innerHTML='<div class="empty" id="HINT">点击「开始识别」<br>开始实时语音转写</div>';
-    sentCnt=0;charCnt=0;MC.textContent='0';MCH.textContent='0';
+    SC.innerHTML = `<div class="empty" id="HINT">${T('emptyHint')}</div>`;
+    sentCnt=0; charCnt=0; MC.textContent='0'; MCH.textContent='0';
+    if(_audio){ _audio.pause(); _audio=null; }
+    _activeEntry=null; _entryTimes=[];
+    const pb=_el('PBAR'); if(pb) pb.classList.add('hidden');
+    const pp=_el('PBAR_PLAYER'), pm=_el('PBAR_MERGE');
+    if(pp) pp.style.display='none';
+    if(pm) pm.style.display='none';
+    const seek=_el('PBAR_SEEK'); if(seek) seek.value=0;
+    const timeEl=_el('PBAR_TIME'); if(timeEl) timeEl.textContent='0:00 / 0:00';
+    const btn=_el('PBAR_BTN'); if(btn) btn.textContent='▶';
   }
-  else if(m.type==='export') dlFile(m.content,m.format);
-  else if(m.type==='settings'){ G.settings=m.settings; applySettings(m.settings); }
-  else if(m.type==='save_done'){ showToast('已保存：'+m.path.split('/').pop()); }
-  else if(m.type==='save_cancelled'){ /* 用户取消，静默 */ }
-  else if(m.type.startsWith('dl_')){ handleDlMsg(m); }
+  else if(m.type==='export') dlFile(m.content, m.format);
+  else if(m.type==='settings'){ G.settings=m.settings; applySettings(m.settings); applyAsrLangUI(m.settings.asr_language||null); }
+  else if(m.type==='save_done'){
+    showToast(T('toastSaved').replace('{name}', m.path.split('/').pop()));
+  }
+  else if(m.type==='save_cancelled'){}
+  else if(m.type.startsWith('dl_')) handleDlMsg(m);
   else if(m.type==='rec_saved'){
     const name = m.path.split('/').pop();
     const size = m.size_mb ? ` (${m.size_mb}MB)` : '';
-    showToast(`录音已保存：${name}${size}`);
+    showToast(T('toastRecSaved').replace('{name}', name).replace('{size}', size));
+    playerLoad('/rec_file?path='+encodeURIComponent(m.path));
+  }
+  else if(m.type==='rec_segment'){
+    _el('PBAR_MERGE_TXT').textContent = T('mergingSegment').replace('{n}', m.index+1);
   }
 }
 
-// ── 录音状态 ──────────────────────────────────────────────
-function setRec(on){
-  RBT.textContent = on?'■ 停止':'● 开始';
-  RBT.className   = 'btn'+(on?' ron':'');
-  SRB.className   = 'rbig'+(on?' on':'');
-  SRL.textContent = on?'停止识别':'开始识别';
-  DOT.className   = 'dot'+(on?' on':'');
+// ── Recording state ────────────────────────────────────────
+function setRec(on, meta){
+  if(on){
+    recState='recording';
+    // Server's rec_start_time is more accurate than frontend click time
+    // (avoids WebSocket round-trip skew). Only update on actual start.
+    if(meta && meta.rec_start_time && recState !== 'paused'){
+      _recStartWallMs = meta.rec_start_time * 1000; // server sends epoch seconds
+    }
+  } else {
+    if(recState==='recording') recState='idle';
+  }
+  _applyRecUI();
+}
+
+function _applyRecUI(){
+  const isRec  = recState === 'recording';
+  const isPaus = recState === 'paused';
+  const isIdle = recState === 'idle' || recState === 'merging' || recState === 'ready';
+
+  _el('RBT').style.display    = isIdle ? '' : 'none';
+  _el('RPAUSE').style.display = (isRec||isPaus) ? '' : 'none';
+  _el('RSTOP').style.display  = (isRec||isPaus) ? '' : 'none';
+  _el('RPAUSE').textContent   = isPaus ? T('btnResume') : T('btnPause');
+  _el('RPAUSE').className     = isPaus ? 'btn act' : 'btn';
+  _el('RSTOP').textContent    = T('btnStop');
+
+  _el('SRB').style.display = isIdle ? '' : 'none';
+  const ctrl = _el('SREC_CTRL');
+  if(ctrl) ctrl.style.display = (isRec||isPaus) ? 'flex' : 'none';
+  const sprl = _el('SPRL');
+  if(sprl) sprl.textContent = isPaus ? T('sideResume') : T('sidePause');
+
+  _el('SRB').className   = 'rbig' + (isRec?' on':'');
+  _el('SRL').textContent = isRec ? T('recRunning') : isPaus ? T('recPaused') : T('recStart');
+  _el('DOT').className   = 'dot' + (isRec?' on':'');
+
+  // Disable start button until model is ready
+  const notReady = !_modelReady && isIdle && recState !== 'ready';
+  _el('RBT').disabled = notReady;
+  _el('RBT').style.opacity = notReady ? '0.35' : '';
+  const srb = _el('SRB');
+  if(srb){ srb.disabled = notReady; srb.style.opacity = notReady ? '0.35' : ''; }
+
+  // Disable settings button and quick-adjust sliders while recording or paused
+  const settBtn = _el('SETTINGSBTN');
+  if(settBtn){
+    settBtn.disabled = isRec || isPaus;
+    settBtn.title = (isRec||isPaus) ? T('settingsDisabled') : '';
+  }
+  const busy = isRec || isPaus;
+  ['SLIDER_SILENCE','SLIDER_VAD','SLIDER_GAIN'].forEach(id=>{
+    const sl = _el(id); if(!sl) return;
+    sl.disabled = busy;
+    sl.style.opacity = busy ? '0.35' : '';
+    sl.style.cursor  = busy ? 'not-allowed' : '';
+  });
+
+  // 录音中或暂停时禁用识别语言切换
+  document.querySelectorAll('.asr-lang').forEach(btn => {
+    btn.style.opacity    = busy ? '0.35' : '';
+    btn.style.cursor     = busy ? 'not-allowed' : '';
+    btn.style.pointerEvents = busy ? 'none' : '';
+  });
+
   const wn = (G.settings&&G.settings.whisper_repo||'whisper').split('/').pop();
   const ln = (G.settings&&G.settings.llm_repo||'llm').split('/').pop();
-  TST.textContent = on?`识别中 · ${wn} · ${ln}`:'已暂停';
-  if(on){
-    recSec=0;
-    recTi=setInterval(()=>{
-      recSec++;
-      const h=String(Math.floor(recSec/3600)).padStart(2,'0'),
-            mi=String(Math.floor((recSec%3600)/60)).padStart(2,'0'),
-            s=String(recSec%60).padStart(2,'0');
-      WT.textContent=`${h}:${mi}:${s}`;
-      MRT.textContent=`${h}:${mi}:${s}`;
-    },1000);
+  _el('TST').textContent = isRec
+    ? T('statusRecording').replace('{whisper}',wn).replace('{llm}',ln)
+    : isPaus ? T('statusPaused') : T('statusReady');
+
+  if(isRec && recState!=='paused'){
+    if(!recTi){
+      recTi=setInterval(()=>{
+        recSec++;
+        const h=String(Math.floor(recSec/3600)).padStart(2,'0'),
+              mi=String(Math.floor((recSec%3600)/60)).padStart(2,'0'),
+              s=String(recSec%60).padStart(2,'0');
+        _el('WT').textContent=`${h}:${mi}:${s}`;
+        _el('MRT').textContent=`${h}:${mi}:${s}`;
+      },1000);
+    }
     waveOn=true; waveLoop();
-  } else {
-    clearInterval(recTi); waveOn=false;
+  } else if(isPaus){
+    clearInterval(recTi); recTi=null; waveOn=false;
+  } else if(isIdle){
+    clearInterval(recTi); recTi=null; waveOn=false;
   }
 }
+
 function toggleRec(){
-  send({action: SRB.classList.contains('on')?'stop':'start'});
+  if(recState==='idle'||recState==='ready'){
+    // If restarting after a previous session, clear subtitles and player first
+    if(recState==='ready'){
+      send({action:'clear'});
+      // Also reset player bar immediately without waiting for server echo
+      if(_audio){ _audio.pause(); _audio=null; }
+      _activeEntry=null; _entryTimes=[];
+      const pb=_el('PBAR'); if(pb) pb.classList.add('hidden');
+      const pp=_el('PBAR_PLAYER'), pm=_el('PBAR_MERGE');
+      if(pp) pp.style.display='none';
+      if(pm) pm.style.display='none';
+      const seek=_el('PBAR_SEEK'); if(seek) seek.value=0;
+      const timeEl=_el('PBAR_TIME'); if(timeEl) timeEl.textContent='0:00 / 0:00';
+      const btn=_el('PBAR_BTN'); if(btn) btn.textContent='▶';
+    }
+    recState='recording';
+    recSec=0; recTi=null;
+    _recStartWallMs = Date.now(); // ← exact moment recording starts
+    send({action:'start'});
+    _applyRecUI();
+  }
+}
+function togglePause(){
+  if(recState==='recording'){
+    recState='paused'; send({action:'pause'}); _applyRecUI();
+  } else if(recState==='paused'){
+    recState='recording'; send({action:'resume'}); _applyRecUI();
+  }
+}
+function stopRec(){
+  recState='merging';
+  send({action:'stop'});
+  _applyRecUI();
+  const pb=_el('PBAR'), pm=_el('PBAR_MERGE'), pp=_el('PBAR_PLAYER');
+  pb.classList.remove('hidden');
+  pm.style.display='flex'; pp.style.display='none';
+  _el('PBAR_MERGE_TXT').textContent = T('merging');
 }
 
-// ── 波形 ──────────────────────────────────────────────────
-const WB=document.getElementById('WB');
+// ── MP3 player ────────────────────────────────────────────
+let _audio=null, playerSeeking=false, followMode=true;
+let _entryTimes=[], _activeEntry=null;
+
+function followModeChanged(){
+  followMode = _el('FOLLOW_SW').checked;
+  if(!followMode && _activeEntry){ _activeEntry.classList.remove('playing'); _activeEntry=null; }
+}
+
+let _lastVol=100;
+function toggleMute(){
+  const sl=_el('VOL_SLIDER'); if(!sl) return;
+  if(+sl.value>0){ _lastVol=+sl.value; setVolume(0); sl.value=0; }
+  else { setVolume(_lastVol); sl.value=_lastVol; }
+  _updateVolTrack(sl.value);
+}
+function setVolume(val){
+  val=+val;
+  if(_audio) _audio.volume=val/100;
+  const btn=_el('VOL_BTN');
+  if(btn){
+    if(val===0) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <line x1="11" y1="5.5" x2="15" y2="10.5" stroke="#d04040" stroke-width="1.4" stroke-linecap="round"/> <line x1="15" y1="5.5" x2="11" y2="10.5" stroke="#d04040" stroke-width="1.4" stroke-linecap="round"/></svg>';
+    else if(val<40) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg>';
+    else btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/> <path d="M12.5 3.5C14 4.8 15 6.3 15 8C15 9.7 14 11.2 12.5 12.5" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg>';
+  }
+  _updateVolTrack(val);
+}
+function _updateVolTrack(val){
+  const sl=_el('VOL_SLIDER');
+  if(sl) sl.style.background=`linear-gradient(to right, var(--ac) ${val}%, var(--b2) ${val}%)`;
+}
+
+function playerLoad(url){
+  recState='ready'; _applyRecUI();
+  _buildEntryTimes();
+  if(_audio){ _audio.pause(); _audio=null; }
+  _audio=new Audio(url);
+  const vs=_el('VOL_SLIDER');
+  if(vs){ _audio.volume=vs.value/100; _updateVolTrack(vs.value); }
+  _audio.addEventListener('timeupdate', _playerUpdate);
+  _audio.addEventListener('ended', ()=>{ _el('PBAR_BTN').textContent='▶'; });
+  const pb=_el('PBAR'), pm=_el('PBAR_MERGE'), pp=_el('PBAR_PLAYER');
+  pb.classList.remove('hidden'); pm.style.display='none'; pp.style.display='flex';
+}
+
+/**
+ * Build entry→audio offset table.
+ *
+ * Each subtitle entry's `.ets` now contains the wall-clock HH:MM:SS of the
+ * moment the spoken sentence *started* inside the recording (computed on the
+ * server from the exact frame count, not from when LLM finished).
+ *
+ * `_recStartWallMs` is Date.now() captured the instant the user clicked Start.
+ *
+ * Offset = (entry_wall_seconds_since_midnight) − (recStart_seconds_since_midnight)
+ *
+ * Because both values come from the same clock source (server local time for
+ * the entry, browser local time for recStart — they are the same machine),
+ * the subtraction gives the sentence's true position inside the MP3.
+ */
+function _buildEntryTimes(){
+  _entryTimes = [];
+
+  // Fallback: recording start as seconds-since-midnight (used only when mp3_offset_s absent)
+  let recBaseSec = null;
+  if(_recStartWallMs){
+    const d = new Date(_recStartWallMs);
+    recBaseSec = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds()
+                 + d.getMilliseconds()/1000;
+  }
+
+  document.querySelectorAll('.ent:not(.live)').forEach(el=>{
+    // PRIMARY: server computed frame-accurate offset stored on the element
+    if(el.dataset.mp3Offset !== undefined && el.dataset.mp3Offset !== ''){
+      _entryTimes.push({el, sec: parseFloat(el.dataset.mp3Offset)});
+      return;
+    }
+    // FALLBACK: derive from HH:MM:SS wall-clock (history / old entries)
+    const tsEl = el.querySelector('.ets');
+    if(!tsEl) return;
+    const ts = tsEl.textContent.trim();
+    const parts = ts.split(':').map(Number);
+    if(parts.length!==3) return;
+    const wallSec = parts[0]*3600 + parts[1]*60 + parts[2];
+    _entryTimes.push({el, wallSec});
+  });
+
+  if(_entryTimes.length===0) return;
+
+  // Resolve any fallback entries that still need wall-clock math
+  const base = recBaseSec !== null ? recBaseSec
+    : (_entryTimes.find(e=>e.wallSec!==undefined)||{wallSec:0}).wallSec;
+  _entryTimes.forEach(e=>{
+    if(e.sec === undefined) e.sec = Math.max(0, e.wallSec - base);
+  });
+
+  _entryTimes.sort((a,b)=>a.sec-b.sec);
+}
+
+function _playerUpdate(){
+  if(!_audio||playerSeeking) return;
+  const cur=_audio.currentTime, dur=_audio.duration||0;
+  const seek=_el('PBAR_SEEK'), timeEl=_el('PBAR_TIME');
+  if(seek) seek.value=dur?(cur/dur*100):0;
+  if(timeEl) timeEl.textContent=_fmt(cur)+' / '+_fmt(dur);
+  if(followMode) _syncSubtitle(cur);
+}
+function _fmt(s){ s=Math.floor(s||0); const m=Math.floor(s/60),ss=s%60; return m+':'+(ss<10?'0':'')+ss; }
+
+function _syncSubtitle(cur){
+  let active=null;
+  for(const e of _entryTimes){ if(e.sec<=cur) active=e; else break; }
+  const newEl=active?active.el:null;
+  if(newEl===_activeEntry) return;
+  if(_activeEntry) _activeEntry.classList.remove('playing');
+  _activeEntry=newEl;
+  if(_activeEntry){
+    _activeEntry.classList.add('playing');
+    // Use 'center' so the active entry is always fully in view, not just "nearest"
+    _activeEntry.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+}
+function seekToEntry(el){
+  if(!_audio || el.dataset.mp3Offset === undefined) return;
+  const offset = parseFloat(el.dataset.mp3Offset);
+  if(isNaN(offset)) return;
+  // Seek audio to this subtitle's start position
+  _audio.currentTime = offset;
+  // If paused, start playing
+  if(_audio.paused){
+    _audio.play();
+    _el('PBAR_BTN').textContent = '⏸';
+  }
+  // Highlight this entry immediately without waiting for timeupdate
+  if(_activeEntry && _activeEntry !== el) _activeEntry.classList.remove('playing');
+  _activeEntry = el;
+  el.classList.add('playing');
+}
+
+function playerToggle(){
+  if(!_audio) return;
+  if(_audio.paused){ _audio.play(); _el('PBAR_BTN').textContent='⏸'; }
+  else { _audio.pause(); _el('PBAR_BTN').textContent='▶'; }
+}
+function playerSeek(val){
+  if(!_audio) return;
+  _audio.currentTime=(_audio.duration||0)*val/100;
+}
+
+// ── Waveform ──────────────────────────────────────────────
+const WB=_el('WB');
 const wcs=[];
-for(let i=0;i<76;i++){const d=document.createElement('div');d.className='wc';d.style.height='3px';WB.insertBefore(d,WB.lastElementChild);wcs.push(d)}
+for(let i=0;i<76;i++){const d=document.createElement('div');d.className='wc';d.style.height='3px';WB.insertBefore(d,WB.lastElementChild);wcs.push(d);}
 let waveOn=false;
 function waveLoop(){
-  if(!waveOn){wcs.forEach(c=>c.style.height='3px');return}
+  if(!waveOn){wcs.forEach(c=>c.style.height='3px');return;}
   wcs.forEach((c,i)=>{
     const h=2+Math.random()*30*(0.3+0.7*Math.abs(Math.sin(Date.now()/500+i*.33)));
     c.style.height=h+'px';
@@ -577,447 +1430,364 @@ function waveLoop(){
   setTimeout(waveLoop,65);
 }
 
-// ── 字幕 ──────────────────────────────────────────────────
-// 语言代码映射
+// ── Subtitle entries ──────────────────────────────────────
 const LANG_MAP={chinese:'zh',english:'en',japanese:'ja',korean:'ko',french:'fr',german:'de',spanish:'es',
                 zh:'zh',en:'en',ja:'ja',ko:'ko',fr:'fr',de:'de',es:'es'};
 function lc(lang){ return LANG_MAP[(lang||'').toLowerCase()]||'en'; }
 
-// 中文显示名
-const LANG_ZH={zh:'中文',en:'英文',ja:'日文',ko:'韩文',fr:'法文',de:'德文',es:'西班牙文'};
-
-// 每种语言对应的 CSS class / 颜色变量（保证同语言颜色一致）
-const LANG_COLOR={
-  zh:'--cl-zh', en:'--cl-en', ja:'--cl-ja',
-  ko:'--cl-ko', fr:'--cl-fr', de:'--cl-de', es:'--cl-es',
-};
-// 翻译语言名 → 语言代码
 const TRANS_TO_CODE={
-  English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es',
-  英文:'en',日文:'ja',韩文:'ko',法文:'fr',德文:'de',西班牙文:'es',
-  Chinese:'zh',中文:'zh',
+  English:'en',Japanese:'ja',Korean:'ko',French:'fr',German:'de',Spanish:'es',Chinese:'zh',
+  英文:'en',日文:'ja',韩文:'ko',法文:'fr',德文:'de',西班牙文:'es',中文:'zh',
 };
-function tc(n){
-  return TRANS_TO_CODE[n]||'en';
-}
-function langColor(code){
-  return `var(${LANG_COLOR[code]||'--cl-en'})`;
-}
+function tc(n){ return TRANS_TO_CODE[n]||'en'; }
+
+const LANG_COLOR={zh:'--cl-zh',en:'--cl-en',ja:'--cl-ja',ko:'--cl-ko',fr:'--cl-fr',de:'--cl-de',es:'--cl-es'};
+function langColor(code){ return `var(${LANG_COLOR[code]||'--cl-en'})`; }
 
 function addEntry(e){
-  const h=document.getElementById('HINT'); if(h) h.remove();
+  const h=_el('HINT'); if(h) h.remove();
   const cls=lc(e.language);
   const div=document.createElement('div');
   div.className=`ent ${cls}`;
   div.dataset.id=e.id;
+  div.onclick = () => seekToEntry(div);
   div.dataset.raw=(e.corrected||'').toLowerCase()+' '+Object.values(e.translations||{}).join(' ').toLowerCase();
+  // Store the server-computed MP3 offset directly on the element
+  if(e.mp3_offset_s != null) div.dataset.mp3Offset = e.mp3_offset_s;
 
-  // 同语言不显示译文（说中文时不显示中文译文）
-  const origCode = lc(e.language);
+  const origCode=lc(e.language);
   const transHtml=Object.entries(e.translations||{}).map(([ln,tx])=>{
     const code=tc(ln);
-    if(code===origCode) return ''; // 跳过同语言
+    if(code===origCode) return '';
     const col=langColor(code);
-    const label=LANG_ZH[code]||ln;
-    const safeQ = escHtml(tx).replace(/"/g,'&quot;');
+    // Display name uses i18n langName map
+    const label = TL(code);
+    const safeQ=escHtml(tx).replace(/"/g,'&quot;');
     return `<div class="trow"><span class="tlbl" style="color:${col}">${label}</span><span class="tt" data-plain="${safeQ}" style="color:${col};opacity:.85">${escHtml(tx)}</span></div>`;
   }).join('');
 
   div.innerHTML=`
     <div class="eHead">
-      <span class="badge ${cls}">${LANG_ZH[cls]||cls}</span>
+      <span class="badge ${cls}">${TL(cls)}</span>
       <span class="ets">${e.timestamp}</span>
       <span class="elat">ASR ${e.asr_ms}ms · LLM ${e.llm_ms}ms</span>
     </div>
     <div class="orig" id="orig-${e.id}" data-plain="${escHtml(e.corrected).replace(/"/g,'&quot;')}">${escHtml(e.corrected)}</div>
     ${transHtml?`<div class="tblock">${transHtml}</div>`:''}
   `;
-
   SC.appendChild(div);
   sentCnt++; charCnt+=(e.corrected||'').length;
   MC.textContent=sentCnt; MCH.textContent=charCnt;
   if(autoScroll) scrollBot();
+
+  // Incrementally keep _entryTimes in sync so late-arriving entries
+  // (ASR/LLM still in flight when stop/pause was pressed) are included.
+  if(e.mp3_offset_s != null){
+    const sec = parseFloat(e.mp3_offset_s);
+    // Insert in sorted order
+    const idx = _entryTimes.findIndex(t => t.sec > sec);
+    const item = {el: div, sec};
+    if(idx === -1) _entryTimes.push(item);
+    else _entryTimes.splice(idx, 0, item);
+  }
 }
 
 function showLive(raw,lang,asr_ms){
   removeLive();
-  const h=document.getElementById('HINT'); if(h) h.remove();
+  const h=_el('HINT'); if(h) h.remove();
   const cls=lc(lang);
   const div=document.createElement('div');
   div.className='ent live'; div.id='LIVE';
   div.innerHTML=`
     <div class="eHead">
-      <span class="badge ${cls}">${LANG_ZH[cls]||cls}</span>
+      <span class="badge ${cls}">${TL(cls)}</span>
       <span class="ets">${new Date().toTimeString().slice(0,8)}</span>
-      <span class="elat">ASR ${asr_ms}ms · LLM 处理中…</span>
+      <span class="elat">ASR ${asr_ms}ms · ${T('liveProcessing')}</span>
     </div>
     <div class="orig">${escHtml(raw)}<span class="cur"></span></div>
   `;
   SC.appendChild(div);
   if(autoScroll) scrollBot();
 }
-function removeLive(){ const l=document.getElementById('LIVE'); if(l) l.remove(); }
+function removeLive(){ const l=_el('LIVE'); if(l) l.remove(); }
 
-// ── 指标 ──────────────────────────────────────────────────
 function updateMetrics(a,l){
   MA.textContent=a+'ms'; ML.textContent=l+'ms';
   const t=a+l; MT.textContent=t+'ms';
   MT.className='mv '+(t<1000?'g':t<2000?'w':'r');
 }
 
-// ── 搜索 ──────────────────────────────────────────────────
-function highlightText(text, q){
+// ── Search ────────────────────────────────────────────────
+function highlightText(text,q){
   if(!q) return escHtml(text);
-  const escaped = escHtml(text);
-  const escapedQ = escHtml(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return escaped.replace(new RegExp(escapedQ, 'gi'), m=>`<mark class="hl">${m}</mark>`);
+  const escaped=escHtml(text);
+  const escapedQ=escHtml(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return escaped.replace(new RegExp(escapedQ,'gi'),m=>`<mark class="hl">${m}</mark>`);
 }
-
-function clearSearch(){
-  document.getElementById('SB').value = '';
-  searchEntries('');
-}
-
+function clearSearch(){ _el('SB').value=''; searchEntries(''); }
 function searchEntries(q){
-  const clrBtn = document.getElementById('SBCLR');
-  if(clrBtn) clrBtn.style.display = q ? 'block' : 'none';
-  autoScroll = !q;
-  const qL = q.toLowerCase();
+  const clrBtn=_el('SBCLR'); if(clrBtn) clrBtn.style.display=q?'block':'none';
+  autoScroll=!q;
+  const qL=q.toLowerCase();
   document.querySelectorAll('.ent:not(.live)').forEach(el=>{
-    const raw = el.dataset.raw || '';
-    const matches = !q || raw.includes(qL);
-    el.style.display = matches ? '' : 'none';
+    const raw=el.dataset.raw||'';
+    const matches=!q||raw.includes(qL);
+    el.style.display=matches?'':'none';
     if(!matches) return;
-
-    // 高亮原文
-    const origEl = el.querySelector('.orig');
-    if(origEl && origEl.dataset.plain !== undefined){
-      origEl.innerHTML = q
-        ? highlightText(origEl.dataset.plain, q)
-        : escHtml(origEl.dataset.plain);
+    const origEl=el.querySelector('.orig');
+    if(origEl&&origEl.dataset.plain!==undefined){
+      origEl.innerHTML=q?highlightText(origEl.dataset.plain,q):escHtml(origEl.dataset.plain);
     }
-    // 高亮译文
     el.querySelectorAll('.tt[data-plain]').forEach(ttEl=>{
-      ttEl.innerHTML = q
-        ? highlightText(ttEl.dataset.plain, q)
-        : escHtml(ttEl.dataset.plain);
+      ttEl.innerHTML=q?highlightText(ttEl.dataset.plain,q):escHtml(ttEl.dataset.plain);
     });
   });
 }
-
-function scrollBot(){ SC.scrollTop=SC.scrollHeight; }
+function scrollBot(){
+  _programmaticScroll=true;
+  SC.scrollTop=SC.scrollHeight;
+  // Release flag after scroll event fires (next microtask)
+  setTimeout(()=>{ _programmaticScroll=false; }, 0);
+}
+let _programmaticScroll = false;
 SC.addEventListener('scroll',()=>{
-  autoScroll = SC.scrollHeight-SC.scrollTop-SC.clientHeight < 80;
+  // Ignore scroll events triggered by follow-mode or scrollBot()
+  if(_programmaticScroll) return;
+  autoScroll=SC.scrollHeight-SC.scrollTop-SC.clientHeight<80;
 });
 
-// ── 设置 ──────────────────────────────────────────────────
+// ── Settings ──────────────────────────────────────────────
 let settingsTi;
 function queueSettings(patch){
   clearTimeout(settingsTi);
   settingsTi=setTimeout(()=>send({action:'update_settings',settings:patch}),500);
 }
-
 function applySettings(s){
   if(s.font_size) document.documentElement.style.setProperty('--fs',s.font_size+'px');
   if(s.auto_scroll!==undefined) autoScroll=!!s.auto_scroll;
+  // 同步 sidebar 快速调节滑块
+  if(s.silence_s!==undefined){
+    const sl=_el('SLIDER_SILENCE'); if(sl){ sl.value=Math.round(s.silence_s*10); }
+    const sv=_el('SV'); if(sv) sv.textContent=s.silence_s.toFixed(1)+'s';
+  }
+  if(s.vad_threshold!==undefined){
+    const sl=_el('SLIDER_VAD'); if(sl){ sl.value=Math.round(s.vad_threshold*100); }
+    const vv=_el('VV'); if(vv) vv.textContent=s.vad_threshold.toFixed(2);
+  }
+  if(s.mic_gain!==undefined){
+    const sl=_el('SLIDER_GAIN'); if(sl){ sl.value=Math.round(s.mic_gain*10); }
+    const gv=_el('GV'); if(gv) gv.textContent=s.mic_gain.toFixed(1)+'×';
+  }
 }
 
 async function openSettings(){
   OV.style.display='flex';
   try {
-    const res = await fetch('/api/models');
-    const data = await res.json();
-    const cur = G.settings || {};
+    const res=await fetch('/api/models');
+    const data=await res.json();
+    const cur=G.settings||{};
 
-    // 恢复场景描述
-    const scp = document.getElementById('SCP');
-    if(scp) scp.value = cur.context_prompt || '';
+    const scp=_el('SCP'); if(scp) scp.value=cur.context_prompt||'';
 
-    // 恢复录音设置
-    const srec = document.getElementById('SREC');
-    const sbit = document.getElementById('SBIT');
-    const sbitRow = document.getElementById('SBITRATE_ROW');
+    const srec=_el('SREC'), sbit=_el('SBIT'), sbitRow=_el('SBITRATE_ROW');
     if(srec){
-      srec.checked = cur.save_recording !== false;
-      srec.onchange = () => {
-        if(sbitRow) sbitRow.style.display = srec.checked ? '' : 'none';
-      };
-      if(sbitRow) sbitRow.style.display = srec.checked ? '' : 'none';
+      srec.checked=cur.save_recording!==false;
+      srec.onchange=()=>{ if(sbitRow) sbitRow.style.display=srec.checked?'':'none'; };
+      if(sbitRow) sbitRow.style.display=srec.checked?'':'none';
     }
-    if(sbit) sbit.value = cur.mp3_bitrate || '192';
+    if(sbit) sbit.value=cur.mp3_bitrate||'192';
 
-    // Whisper 下拉
-    SW.innerHTML = data.whisper.length
-      ? data.whisper.map(r => {
-          const name = r.split('/')[1];
-          const isCur = r === (cur.whisper_repo || '');
-          const sel = isCur ? ' selected' : '';
-          const label = isCur ? `${name}（当前）` : name;
-          return `<option value="${r}"${sel}>${label}</option>`;
+    // Whisper dropdown
+    _el('SW').innerHTML=data.whisper.length
+      ? data.whisper.map(r=>{
+          const name=r.split('/')[1], isCur=r===(cur.whisper_repo||'');
+          const label=isCur?T('whisperCurrent').replace('{name}',name):name;
+          return `<option value="${r}"${isCur?' selected':''}>${label}</option>`;
         }).join('')
-      : '<option value="">未找到本地 Whisper 模型</option>';
+      : `<option value="">${T('whisperNone')}</option>`;
 
-    // LLM 下拉
-    SL.innerHTML = data.llm.length
-      ? data.llm.map(r => {
-          const name = r.split('/')[1];
-          const isCur = r === (cur.llm_repo || '');
-          const sel = isCur ? ' selected' : '';
-          const label = isCur ? `${name}（当前）` : name;
-          return `<option value="${r}"${sel}>${label}</option>`;
+    // LLM dropdown
+    _el('SL').innerHTML=data.llm.length
+      ? data.llm.map(r=>{
+          const name=r.split('/')[1], isCur=r===(cur.llm_repo||'');
+          const label=isCur?T('llmCurrent').replace('{name}',name):name;
+          return `<option value="${r}"${isCur?' selected':''}>${label}</option>`;
         }).join('')
-      : '<option value="">未找到本地 LLM 模型</option>';
+      : `<option value="">${T('llmNone')}</option>`;
 
-    // 加载麦克风设备
+    // Microphone
     try {
-      const devRes = await fetch('/api/devices');
-      const devs = await devRes.json();
-      const curDev = cur.input_device;
-      SDS.innerHTML = `<option value=""${curDev===null||curDev===undefined?' selected':''}>系统默认麦克风</option>`;
-      devs.forEach(d => {
-        const sel = String(d.id) === String(curDev) ? ' selected' : '';
-        SDS.innerHTML += `<option value="${d.id}"${sel}>${d.name}</option>`;
+      const devRes=await fetch('/api/devices'), devs=await devRes.json();
+      const curDev=cur.input_device;
+      _el('SDS').innerHTML=`<option value=""${curDev===null||curDev===undefined?' selected':''}>${T('micDefault')}</option>`;
+      devs.forEach(d=>{
+        const sel=String(d.id)===String(curDev)?' selected':'';
+        _el('SDS').innerHTML+=`<option value="${d.id}"${sel}>${d.name}</option>`;
       });
-    } catch(e2) {
-      SDS.innerHTML = '<option value="">获取设备失败</option>';
-    }
+    } catch(e2){ _el('SDS').innerHTML=`<option value="">${T('micFailed')}</option>`; }
 
-  } catch(e) {
-    SW.innerHTML = '<option value="">扫描失败</option>';
-    SL.innerHTML = '<option value="">扫描失败</option>';
+  } catch(e){
+    _el('SW').innerHTML=`<option value="">${T('scanFailed')}</option>`;
+    _el('SL').innerHTML=`<option value="">${T('scanFailed')}</option>`;
   }
 }
 function closeSettings(){ OV.style.display='none'; }
 
 function saveSettings(){
-  const langs=[...document.querySelectorAll('#TLOGS .tog.on')].map(t=>t.dataset.lang);
-  const devVal = SDS.value === '' ? null : parseInt(SDS.value);
+  const langs=[..._el('TLOGS').querySelectorAll('.tog.on')].map(t=>t.dataset.langKey
+    ? I18N.zh[t.dataset.langKey]   // always store in ZH canonical form for backend
+    : t.textContent);
+  const devVal=_el('SDS').value===''?null:parseInt(_el('SDS').value);
   const settings={
-    whisper_repo:   SW.value,
-    llm_repo:       SL.value,
-    input_device:   devVal,
-    context_prompt:  (document.getElementById('SCP')?.value || '').trim(),
-    save_recording:  document.getElementById('SREC')?.checked ?? true,
-    mp3_bitrate:     document.getElementById('SBIT')?.value || '192',
-    translate_to: langs,
-    silence_s:    +SSL.value/10,
-    vad_threshold:+SVL.value/100,
-    max_sentence_s:+SML.value,
-    ctx_sentences: +SCL.value,
-    font_size:    +SFS.value,
-    auto_scroll:  +SAS.value===1,
+    whisper_repo:  _el('SW').value,
+    llm_repo:      _el('SL').value,
+    input_device:  devVal,
+    context_prompt:(_el('SCP')?.value||'').trim(),
+    save_recording: _el('SREC')?.checked??true,
+    mp3_bitrate:    _el('SBIT')?.value||'192',
+    translate_to:  langs,
+    silence_s:    +_el('SSL').value/10,
+    vad_threshold:+_el('SVL').value/100,
+    max_sentence_s:+_el('SML').value,
+    ctx_sentences: +_el('SCL').value,
+    font_size:    +_el('SFS').value,
+    auto_scroll:  +_el('SAS').value===1,
   };
   send({action:'update_settings',settings});
   applySettings(settings);
   closeSettings();
 }
 
-// 设置面板 lang toggles
-document.querySelectorAll('#TLOGS .tog').forEach(t=>{
-  t.onclick=()=>t.classList.toggle('on');
-});
+// Settings lang toggles
+document.querySelectorAll('#TLOGS .tog').forEach(t=>{ t.onclick=()=>t.classList.toggle('on'); });
 
-// ── 导出 ──────────────────────────────────────────────────
+// ── Devices reload ────────────────────────────────────────
 async function reloadDevices(){
-  const btn = document.getElementById('RDEVBTN');
-  btn.style.transform = 'rotate(360deg)';
-  btn.style.transition = 'transform .5s ease';
-  setTimeout(() => { btn.style.transform = ''; btn.style.transition = 'all .15s'; }, 500);
-  // 先保存当前选中值，清空后才能正确恢复
-  const prevVal = SDS.value;
-  SDS.innerHTML = '<option value="">检测中…</option>';
+  const btn=_el('RDEVBTN');
+  btn.style.transform='rotate(360deg)'; btn.style.transition='transform .5s ease';
+  setTimeout(()=>{ btn.style.transform=''; btn.style.transition='all .15s'; },500);
+  const prevVal=_el('SDS').value;
+  _el('SDS').innerHTML=`<option value="">${T('micDetecting')}</option>`;
   try {
-    const devRes = await fetch('/api/devices');
-    const devs = await devRes.json();
-    // 重建选项
-    SDS.innerHTML = `<option value="">系统默认麦克风</option>`;
-    devs.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = d.name;
-      SDS.appendChild(opt);
-    });
-    // 恢复之前的选择（若设备仍存在）
-    const exists = [...SDS.options].some(o => String(o.value) === String(prevVal));
-    SDS.value = exists ? prevVal : '';
-  } catch(e) {
-    SDS.innerHTML = '<option value="">获取设备失败</option>';
-  }
+    const devRes=await fetch('/api/devices'), devs=await devRes.json();
+    _el('SDS').innerHTML=`<option value="">${T('micDefault')}</option>`;
+    devs.forEach(d=>{ const opt=document.createElement('option'); opt.value=d.id; opt.textContent=d.name; _el('SDS').appendChild(opt); });
+    const exists=[..._el('SDS').options].some(o=>String(o.value)===String(prevVal));
+    _el('SDS').value=exists?prevVal:'';
+  } catch(e){ _el('SDS').innerHTML=`<option value="">${T('micFailed')}</option>`; }
 }
 
+// ── Export ────────────────────────────────────────────────
 function doExportDialog(){
-  const sel = document.getElementById('ELANG');
-  // 保留固定前三项
-  while(sel.options.length > 3) sel.remove(3);
-
-  // 从用户设置里取翻译目标语言（中文名）
-  const translateTo = (G.settings && G.settings.translate_to) || [];
-
-  // 再补充历史里实际出现的语言（防止设置变更后历史里有旧语言）
-  const histLangs = new Set(translateTo);
-  (G.history||[]).forEach(e => Object.keys(e.translations||{}).forEach(l => histLangs.add(l)));
-
-  histLangs.forEach(l => {
-    const o = document.createElement('option');
-    o.value = l;
-    o.textContent = `仅${l}`;
+  const sel=_el('ELANG');
+  while(sel.options.length>3) sel.remove(3);
+  const translateTo=(G.settings&&G.settings.translate_to)||[];
+  const histLangs=new Set(translateTo);
+  (G.history||[]).forEach(e=>Object.keys(e.translations||{}).forEach(l=>histLangs.add(l)));
+  histLangs.forEach(l=>{
+    const o=document.createElement('option');
+    o.value=l;
+    o.textContent=T('exportOnlyLang').replace('{lang}',l);
     sel.appendChild(o);
   });
-
   EV.style.display='flex';
 }
 function doExport(fmt){
-  const lang = document.getElementById('ELANG')?.value || 'all';
+  const lang=_el('ELANG')?.value||'all';
   send({action:'export',format:fmt,lang_filter:lang});
   EV.style.display='none';
 }
 function dlFile(content,fmt){
-  const lang = document.getElementById('ELANG')?.value || 'all';
-  const langSuffix = lang==='all'?'':'_'+lang;
+  const lang=_el('ELANG')?.value||'all';
+  const langSuffix=lang==='all'?'':'_'+lang;
   const ext={txt:'txt',srt:'srt',json:'json',md:'md'}[fmt]||'txt';
   const name=`asr_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}${langSuffix}.${ext}`;
-  // 发给后端用原生对话框保存（兼容 pywebview 和浏览器两种模式）
-  send({action:'save_file', filename:name, content:content});
+  send({action:'save_file',filename:name,content:content});
 }
 
-// ── 工具 ──────────────────────────────────────────────────
-function clearAll(){ if(confirm('清空所有字幕和上下文记录？')) send({action:'clear'}); }
+// ── Utilities ─────────────────────────────────────────────
+function clearAll(){ if(confirm(T('clearConfirm'))) send({action:'clear'}); }
 function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// 点击遮罩关闭对话框
 OV.addEventListener('click',e=>{ if(e.target===OV) closeSettings(); });
 EV.addEventListener('click',e=>{ if(e.target===EV) EV.style.display='none'; });
 
-connect();
-
-// 启动时检查模型是否就绪
-(async function checkModels(){
-  try {
-    const res = await fetch('/api/check_models');
-    const models = await res.json();
-    const missing = Object.entries(models).filter(([,v])=>!v.cached);
-    if(missing.length > 0) showDownloadGuide(models);
-  } catch(e) {}
-})();
+// ── Download guide ────────────────────────────────────────
+let _dlQueue=[], _currentDlRepo=null;
 
 function showDownloadGuide(models){
-  const ov = document.getElementById('DL_OVERLAY');
-  const entries = Object.entries(models);
-  const allCached = entries.every(([,v])=>v.cached);
-  if(allCached){ ov.style.display='none'; return; }
+  const ov=_el('DL_OVERLAY');
+  const entries=Object.entries(models);
+  if(entries.every(([,v])=>v.cached)){ ov.style.display='none'; return; }
 
-  let modelHTML = entries.map(([repo, info])=>{
-    if(info.cached){
-      return `<div class="dl-model">
-        <div class="dl-model-head">
-          <span class="dl-model-name">${info.label}</span>
-          <span class="dl-model-size">${info.size}</span>
-        </div>
-        <div class="dl-cached">✓ 已下载</div>
-      </div>`;
-    }
-    const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<div class="dl-model" id="dlm_${safeId}">
-      <div class="dl-model-head">
-        <span class="dl-model-name">${info.label}</span>
-        <span class="dl-model-size">${info.size}</span>
-      </div>
-      <div class="dl-model-desc">${info.desc}</div>
-      <div class="dl-status" id="dls_${safeId}">等待下载…</div>
-      <div class="dl-progress" id="dlp_${safeId}">
-        <div class="dl-progress-bar" id="dlb_${safeId}"></div>
-      </div>
-    </div>`;
+  let modelHTML=entries.map(([repo,info])=>{
+    if(info.cached) return `<div class="dl-model"><div class="dl-model-head"><span class="dl-model-name">${info.label}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-cached">${T('dlCached')}</div></div>`;
+    const safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
+    return `<div class="dl-model" id="dlm_${safeId}"><div class="dl-model-head"><span class="dl-model-name">${info.label}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-model-desc">${info.desc}</div><div class="dl-status" id="dls_${safeId}">${T('dlWaiting')}</div><div class="dl-progress" id="dlp_${safeId}"><div class="dl-progress-bar" id="dlb_${safeId}"></div></div></div>`;
   }).join('');
 
-  ov.innerHTML = `
-    <div class="dl-box">
-      <div class="dl-head">
-        <div class="dl-title">欢迎使用 ASR Live</div>
-        <div class="dl-sub">首次使用需要下载 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。</div>
-      </div>
-      <div class="dl-body">${modelHTML}</div>
-      <div class="dl-foot">
-        <button class="dl-btn dl-btn-skip" onclick="skipDownload()">稍后下载，先体验界面</button>
-        <button class="dl-btn dl-btn-primary" id="DL_START_BTN" onclick="startDownloads(${JSON.stringify(Object.entries(models).filter(([,v])=>!v.cached).map(([r])=>r))})">开始下载</button>
-      </div>
-    </div>`;
+  const missingRepos=JSON.stringify(entries.filter(([,v])=>!v.cached).map(([r])=>r));
+  ov.innerHTML=`<div class="dl-box"><div class="dl-head"><div class="dl-title">${T('dlTitle')}</div><div class="dl-sub">${T('dlSub')}</div></div><div class="dl-body">${modelHTML}</div><div class="dl-foot"><button class="dl-btn dl-btn-skip" onclick="skipDownload()">${T('dlSkip')}</button><button class="dl-btn dl-btn-primary" id="DL_START_BTN" onclick="startDownloads(${missingRepos})">${T('dlStart')}</button></div></div>`;
   ov.style.display='flex';
 }
 
-let _dlQueue = [], _dlRunning = false;
-
 async function startDownloads(repos){
-  document.getElementById('DL_START_BTN').disabled = true;
-  document.getElementById('DL_START_BTN').textContent = '下载中…';
-  _dlQueue = [...repos];
+  _el('DL_START_BTN').disabled=true;
+  _el('DL_START_BTN').textContent=T('dlStarting');
+  _dlQueue=[...repos];
   processDownloadQueue();
 }
 
 async function processDownloadQueue(){
-  if(_dlQueue.length === 0){
-    // 全部完成
-    document.getElementById('DL_START_BTN').textContent = '全部完成，进入应用';
-    document.getElementById('DL_START_BTN').disabled = false;
-    document.getElementById('DL_START_BTN').onclick = ()=>{ document.getElementById('DL_OVERLAY').style.display='none'; };
+  if(_dlQueue.length===0){
+    _el('DL_START_BTN').textContent=T('dlAllDone');
+    _el('DL_START_BTN').disabled=false;
+    _el('DL_START_BTN').onclick=()=>{ _el('DL_OVERLAY').style.display='none'; };
     return;
   }
-  const repo = _dlQueue.shift();
-  const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
-  const statusEl = document.getElementById('dls_'+safeId);
-  const progEl   = document.getElementById('dlp_'+safeId);
-  const barEl    = document.getElementById('dlb_'+safeId);
-  if(statusEl) { statusEl.textContent='下载中…'; statusEl.className='dl-status'; }
-  if(progEl)   progEl.style.display='block';
-
-  // 通过 WebSocket 接收进度
-  _currentDlRepo = repo;
-  const res = await fetch('/api/download/'+repo, {method:'POST'});
-  // 进度通过 WS dl_progress 事件接收，见 handle()
+  const repo=_dlQueue.shift();
+  const safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
+  const statusEl=_el('dls_'+safeId), progEl=_el('dlp_'+safeId);
+  if(statusEl){ statusEl.textContent=T('dlDownloading'); statusEl.className='dl-status'; }
+  if(progEl) progEl.style.display='block';
+  _currentDlRepo=repo;
+  await fetch('/api/download/'+repo,{method:'POST'});
 }
 
-let _currentDlRepo = null;
-
-// 在 handle() 里处理下载进度消息（注入到已有 handle 函数）
-const _origHandle = handle;
-
-// 记录 WS 下载消息，追加到 handle 末尾处理
 function handleDlMsg(m){
-  if(!m.type.startsWith('dl_')) return;
-  const repo = m.repo || '';
-  const safeId = repo.replace(/[^a-zA-Z0-9]/g,'_');
-  const statusEl = document.getElementById('dls_'+safeId);
-  const barEl    = document.getElementById('dlb_'+safeId);
-
+  const repo=m.repo||'', safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
+  const statusEl=_el('dls_'+safeId), barEl=_el('dlb_'+safeId);
   if(m.type==='dl_start'){
-    if(statusEl) statusEl.textContent = '连接中…';
+    if(statusEl) statusEl.textContent=T('dlConnecting');
   } else if(m.type==='dl_progress'){
-    const line = m.line||'';
-    if(statusEl){ statusEl.textContent = line; statusEl.className='dl-status'; }
-    // 简单进度动画
-    if(barEl){
-      const cur = parseFloat(barEl.style.width)||0;
-      barEl.style.width = Math.min(cur + 0.3, 95)+'%';
-    }
+    if(statusEl){ statusEl.textContent=m.line||''; statusEl.className='dl-status'; }
+    if(barEl){ const cur=parseFloat(barEl.style.width)||0; barEl.style.width=Math.min(cur+0.3,95)+'%'; }
   } else if(m.type==='dl_done'){
     if(m.success){
-      if(statusEl){ statusEl.textContent='✓ 下载完成'; statusEl.className='dl-status ok'; }
+      if(statusEl){ statusEl.textContent=T('dlDone'); statusEl.className='dl-status ok'; }
       if(barEl) barEl.style.width='100%';
     } else {
-      if(statusEl){ statusEl.textContent='✗ 下载失败，请检查网络后重试'; statusEl.className='dl-status err'; }
+      if(statusEl){ statusEl.textContent=T('dlFailed'); statusEl.className='dl-status err'; }
     }
-    // 继续下一个
-    setTimeout(processDownloadQueue, 500);
+    setTimeout(processDownloadQueue,500);
   } else if(m.type==='dl_error'){
-    if(statusEl){ statusEl.textContent='✗ '+(m.msg||'下载失败'); statusEl.className='dl-status err'; }
-    setTimeout(processDownloadQueue, 500);
+    if(statusEl){ statusEl.textContent=T('dlError').replace('{msg}',m.msg||T('dlFailed')); statusEl.className='dl-status err'; }
+    setTimeout(processDownloadQueue,500);
   }
 }
 
-// 跳过下载
-function skipDownload(){
-  document.getElementById('DL_OVERLAY').style.display='none';
-}
+function skipDownload(){ _el('DL_OVERLAY').style.display='none'; }
+
+// ── Boot ──────────────────────────────────────────────────
+applyUILang();   // render all strings before anything else
+connect();
+
+(async function checkModels(){
+  try {
+    const res=await fetch('/api/check_models');
+    const models=await res.json();
+    if(Object.entries(models).some(([,v])=>!v.cached)) showDownloadGuide(models);
+  } catch(e){}
+})();
 </script>
 </body>
 </html>

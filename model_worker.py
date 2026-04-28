@@ -44,10 +44,13 @@ def worker_main(task_q: Queue, result_q: Queue, whisper_repo: str, llm_repo: str
             audio = np.frombuffer(task["audio_bytes"], dtype=np.float32)
             t0 = time.perf_counter()
             initial_prompt = task.get("initial_prompt") or None
+            asr_language   = task.get("asr_language") or None   # None = 自动检测
+            if asr_language:
+                print(f"[ASR] 语言锁定: {asr_language}", flush=True)
             res = mlx_whisper.transcribe(
                 audio,
                 path_or_hf_repo=whisper_repo,
-                language=None,
+                language=asr_language,             # None=自动, "zh"/"en"/"ja"...
                 word_timestamps=False,
                 fp16=True,
                 temperature=0.0,                   # 贪婪解码，精度最高
@@ -72,11 +75,12 @@ def worker_main(task_q: Queue, result_q: Queue, whisper_repo: str, llm_repo: str
                         raw = ""
 
             result_q.put({
-                "type":    "asr_done",
-                "raw":     raw,
-                "lang":    res.get("language", ""),
-                "asr_ms":  asr_ms,
-                "task_id": task.get("task_id"),
+                "type":             "asr_done",
+                "raw":              raw,
+                "lang":             res.get("language", ""),
+                "asr_ms":           asr_ms,
+                "task_id":          task.get("task_id"),
+                "audio_start_time": task.get("audio_start_time"),  # 透传句子起始时刻
             })
 
         elif kind == "llm":
@@ -90,13 +94,14 @@ def worker_main(task_q: Queue, result_q: Queue, whisper_repo: str, llm_repo: str
             )
             llm_ms = round((time.perf_counter() - t0) * 1000)
             result_q.put({
-                "type":    "llm_done",
-                "resp":    resp,
-                "llm_ms":  llm_ms,
-                "task_id": task.get("task_id"),
-                "raw":     task.get("raw"),
-                "lang":    task.get("lang"),
-                "asr_ms":  task.get("asr_ms"),
+                "type":             "llm_done",
+                "resp":             resp,
+                "llm_ms":           llm_ms,
+                "task_id":          task.get("task_id"),
+                "raw":              task.get("raw"),
+                "lang":             task.get("lang"),
+                "asr_ms":           task.get("asr_ms"),
+                "audio_start_time": task.get("audio_start_time"),  # 透传句子起始时刻
             })
 
 
@@ -126,3 +131,12 @@ class ModelWorker:
     def stop(self):
         self.task_q.put(None)
         self._proc.join(timeout=3)
+        # 修复内存泄漏：超时后强制终止，防止僵尸进程占用资源
+        if self._proc.is_alive():
+            self._proc.terminate()
+            self._proc.join(timeout=2)
+        if self._proc.is_alive():
+            self._proc.kill()
+        # 关闭队列，释放共享内存
+        self.task_q.close()
+        self.result_q.close()

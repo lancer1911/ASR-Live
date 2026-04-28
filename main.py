@@ -1,5 +1,5 @@
 """
-ASR Live v3 — 主入口
+ASR Live v4.0f — 主入口
 用法：
   浏览器模式：python main.py          (在浏览器访问 http://localhost:17433)
   原生窗口：  python main.py --window
@@ -12,21 +12,54 @@ from server import create_app
 PORT = 17433
 
 
-def _free_port():
-    """杀掉占用端口的旧进程"""
-    import subprocess
+def _cleanup_old_processes():
+    """
+    启动前清理旧进程：
+    1. 杀掉占用端口的所有进程（含 uvicorn worker）
+    2. 杀掉其他同名 asr_app/main.py 进程（防止僵尸残留）
+    """
+    import subprocess, os
+
+    my_pid = os.getpid()
+    killed = []
+
+    # ── 1. 按端口杀 ──────────────────────────────────────
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{PORT}"],
             capture_output=True, text=True
         )
-        pids = result.stdout.strip().split()
-        for pid in pids:
-            subprocess.run(["kill", "-9", pid], check=False)
-        if pids:
-            time.sleep(0.3)
+        for pid_str in result.stdout.strip().split():
+            pid = int(pid_str)
+            if pid != my_pid:
+                subprocess.run(["kill", "-9", str(pid)], check=False)
+                killed.append(pid)
     except Exception:
         pass
+
+    # ── 2. 按进程名/命令行杀同名 Python 进程 ─────────────
+    # 匹配包含 "asr_app" 或 "main.py" 且运行 python 的进程
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", r"python.*main\.py"],
+            capture_output=True, text=True
+        )
+        for pid_str in result.stdout.strip().split():
+            pid = int(pid_str)
+            if pid != my_pid and pid not in killed:
+                subprocess.run(["kill", "-9", str(pid)], check=False)
+                killed.append(pid)
+    except Exception:
+        pass
+
+    if killed:
+        print(f"[startup] Cleaned up {len(killed)} old process(es): {killed}")
+        time.sleep(0.4)   # 给 OS 时间回收端口
+
+
+# 保留原名以兼容可能的外部引用
+def _free_port():
+    _cleanup_old_processes()
 
 
 def _start_server():
