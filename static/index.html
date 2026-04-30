@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASR Live v4.0f</title>
+<title>ASR Live v4.2j</title>
 <script>
 /**
  * ASR Live – UI language strings
@@ -24,6 +24,15 @@ const I18N = {
     btnStop:            '■ 停止',
     btnExport:          '导出 ▾',
     btnClear:           '清空',
+    btnSaveSession:     '保存',
+    btnLoadSession:     '加载',
+    sessionSaveOk:      '会话已保存',
+    sessionLoadOk:      (n) => `已加载 ${n} 条字幕`,
+    sessionLoadErr:     '加载失败，请检查文件格式',
+    sessionMp3Ok:       '录音已关联：{name}',
+    sessionMp3Missing:  '录音文件不在原路径，可手动选择 MP3 关联',
+    sessionMp3Pick:     '选择录音文件',
+    sessionMp3None:     '此会话无录音',
     btnSettings:        '设置',
     btnThemeTitle:      '切换主题',
     settingsDisabled:   '录音过程中无法修改设置，请先停止录音',
@@ -163,6 +172,20 @@ const I18N = {
 
     /* ── toasts / alerts ── */
     clearConfirm:       '清空所有字幕和上下文记录？',
+    cfmTitle:           '未保存的内容',
+    cfmBody:            '当前字幕尚未保存，是否先保存？',
+    cfmSave:            '保存',
+    cfmDiscard:         '不保存',
+    cfmCancel:          '取消',
+    cfmClearTitle:      '清空确认',
+    cfmClearBody:       '清空所有字幕和上下文记录？此操作不可撤销。',
+    cfmClearOk:         '清空',
+    btnEditOrig:        '编辑',
+    btnSaveOrig:        '保存',
+    btnTranslateOrig:   '翻译',
+    titleEditOrig:      '编辑原文',
+    bannerSaved:        '✓ 已经保存',
+    bannerDiscarded:    '✗ 放弃保存',
     toastSaved:         '已保存：{name}',
     toastRecSaved:      '录音已保存：{name}{size}',
     scanFailed:         '扫描失败',
@@ -198,6 +221,15 @@ const I18N = {
     btnStop:            '■ Stop',
     btnExport:          'Export ▾',
     btnClear:           'Clear',
+    btnSaveSession:     'Save',
+    btnLoadSession:     'Load',
+    sessionSaveOk:      'Session saved',
+    sessionLoadOk:      (n) => `Loaded ${n} entries`,
+    sessionLoadErr:     'Load failed — please check the file format',
+    sessionMp3Ok:       'Recording linked: {name}',
+    sessionMp3Missing:  'Recording not found at original path — you can pick the MP3 manually',
+    sessionMp3Pick:     'Pick recording file',
+    sessionMp3None:     'No recording in this session',
     btnSettings:        'Settings',
     btnThemeTitle:      'Toggle theme',
     settingsDisabled:   'Settings unavailable while recording. Stop first.',
@@ -337,6 +369,20 @@ const I18N = {
 
     /* ── toasts / alerts ── */
     clearConfirm:       'Clear all subtitles and context history?',
+    cfmTitle:           'Unsaved Content',
+    cfmBody:            'Subtitles have not been saved. Save before continuing?',
+    cfmSave:            'Save',
+    cfmDiscard:         'Discard',
+    cfmCancel:          'Cancel',
+    cfmClearTitle:      'Confirm Clear',
+    cfmClearBody:       'Clear all subtitles and context history? This cannot be undone.',
+    cfmClearOk:         'Clear',
+    btnEditOrig:        'Edit',
+    btnSaveOrig:        'Save',
+    btnTranslateOrig:   'Retranslate',
+    titleEditOrig:      'Edit original text',
+    bannerSaved:        '✓ Saved',
+    bannerDiscarded:    '✗ Discarded',
     toastSaved:         'Saved: {name}',
     toastRecSaved:      'Recording saved: {name}{size}',
     scanFailed:         'Scan failed',
@@ -369,7 +415,7 @@ const I18N = {
   --bg:#0d0f12;--bg2:#13171c;--bg3:#1a1f26;--bg4:#20262f;
   --b1:#1e2530;--b2:#28333f;
   --ac:#00c896;--acd:rgba(0,200,150,.07);
-  --tx:#dde3ea;--su:#7a8796;--hi:#3a4a5a;
+  --tx:#dde3ea;--su:#9aa8b8;--hi:#5a6e82;
   --zh:#e8b84b;--en:#5db8f0;--ja:#f07898;
   --red:#e05050;--grn:#00c896;
   --tx-strong:#f0f4f8;
@@ -381,7 +427,7 @@ const I18N = {
   --bg:#f0f2f5;--bg2:#ffffff;--bg3:#e8eaed;--bg4:#dde0e5;
   --b1:#d0d4da;--b2:#b8bcc4;
   --ac:#009970;--acd:rgba(0,153,112,.07);
-  --tx:#1a2030;--su:#5a6478;--hi:#9aa0ac;
+  --tx:#1a2030;--su:#2e3a4a;--hi:#5c6878;
   --zh:#8a6200;--en:#0060a0;--ja:#c03060;
   --red:#c03030;--grn:#009970;
   --tx-strong:#0d1420;
@@ -405,6 +451,28 @@ html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','
 .btn.ron{border-color:var(--red)!important;color:var(--red)!important;background:rgba(224,80,80,.07)!important}
 .btn.act{border-color:var(--ac);color:var(--ac);background:var(--acd)}
 .btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.btn-danger{border-color:var(--red)!important;color:var(--red)!important}
+.btn-danger:hover{background:rgba(224,80,80,.07)!important}
+/* ── confirm modal ── */
+.cfm-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:600}
+.cfm-box{width:360px;background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.cfm-body{padding:22px 22px 16px;font-size:15px;color:var(--tx);line-height:1.6}
+.cfm-foot{padding:10px 16px 14px;display:flex;justify-content:flex-end;gap:8px}
+.cfm-btn{padding:6px 16px;border-radius:5px;font-size:14px;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;transition:all .12s}
+.cfm-primary{border:none;background:var(--ac);color:#081a14;font-weight:500}
+.cfm-primary:hover{opacity:.85}
+.cfm-ghost{border:0.5px solid var(--b2);background:none;color:var(--su)}
+.cfm-ghost:hover{border-color:var(--tx);color:var(--tx)}
+.cfm-danger{border:0.5px solid var(--red);background:none;color:var(--red)}
+.cfm-danger:hover{background:rgba(224,80,80,.09)}
+/* ── status banner (已保存 / 放弃保存) ── */
+.status-banner{position:fixed;top:56px;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border:0.5px solid var(--b2);border-radius:8px;
+  padding:9px 22px;font-size:14px;color:var(--su);
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:700;white-space:nowrap;
+  animation:sfadein .2s ease}
+@keyframes sfadein{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .lang-toggle{padding:5px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:13px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;letter-spacing:.06em}
 .lang-toggle:hover{border-color:var(--ac);color:var(--ac)}
 
@@ -419,11 +487,13 @@ html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','
 .sg:last-child{border-bottom:none;flex:1}
 .slbl{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.15em;color:var(--hi);text-transform:uppercase;margin-bottom:8px}
 .rbig{width:100%;padding:10px;border-radius:var(--r);border:0.5px solid var(--b2);background:none;color:var(--su);font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:15px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.rbig:not(.on):hover{border-color:var(--ac);color:var(--ac)}
 .rbig.on{border-color:var(--ac);color:var(--ac);background:var(--acd)}
 .rdot{width:7px;height:7px;border-radius:50%;background:var(--hi);transition:all .2s}
 .rbig.on .rdot{background:var(--ac);animation:dp .85s infinite}
 .lrow{display:flex;gap:5px;flex-wrap:wrap}
 .ltag{padding:5px 9px;border-radius:4px;border:0.5px solid var(--b2);background:none;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:14px;color:var(--su);cursor:pointer;transition:all .12s;user-select:none}
+.ltag:not(.on):hover{border-color:var(--ac);color:var(--ac)}
 .ltag.asr-lang.on:not(.zh):not(.en):not(.ja){border-color:var(--ac);color:var(--ac);background:rgba(52,211,153,.07)}
 .ltag.zh.on{border-color:var(--zh);color:var(--zh);background:rgba(232,184,75,.07)}
 .ltag.en.on{border-color:var(--en);color:var(--en);background:rgba(93,184,240,.07)}
@@ -464,7 +534,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .badge.ja{background:rgba(240,120,152,.11);color:#b84d6a;border:0.5px solid rgba(240,120,152,.2)}
 .ets{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
 .elat{margin-left:auto;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
+.edit-btn{margin-left:6px;padding:1px 7px;font-size:12px;border-radius:3px;border:0.5px solid var(--b2);background:none;color:var(--hi);cursor:pointer;flex-shrink:0;line-height:1.6;transition:border-color .15s,color .15s}
+.edit-btn:hover{border-color:var(--ac);color:var(--ac)}
+.edit-btn.saving{border-color:var(--ac);color:var(--ac)}
+.edit-btn-save{margin-left:6px;padding:1px 8px;font-size:12px;border-radius:3px;border:0.5px solid var(--b2);background:none;color:var(--hi);cursor:pointer;flex-shrink:0;line-height:1.6;transition:border-color .15s,color .15s}
+.edit-btn-save:hover{border-color:var(--ac);color:var(--ac)}
+.edit-btn-translate{margin-left:4px;padding:1px 8px;font-size:12px;border-radius:3px;border:0.5px solid rgba(52,211,153,.4);background:rgba(52,211,153,.06);color:var(--ac);cursor:pointer;flex-shrink:0;line-height:1.6;transition:border-color .15s,background .15s}
+.edit-btn-translate:hover{border-color:var(--ac);background:rgba(52,211,153,.13)}
 .orig{padding:10px 12px 9px;line-height:1.7;font-size:16px;font-weight:400;color:var(--tx-strong);border-bottom:0.5px solid var(--b1)}
+.orig-edit{width:100%;box-sizing:border-box;padding:10px 12px 9px;line-height:1.7;font-size:16px;font-weight:400;color:var(--tx-strong);border:none;border-bottom:0.5px solid var(--b1);background:rgba(52,211,153,.04);outline:none;resize:none;font-family:inherit;display:block}
 .cur{display:inline-block;width:2px;height:.88em;background:var(--ac);margin-left:2px;vertical-align:text-bottom;animation:bk .65s infinite}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:0}}
 .tblock{padding:8px 12px}
@@ -518,8 +596,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* ── volume ── */
 .vol-wrap{display:flex;align-items:center;gap:0;flex-shrink:0}
-.vol-btn{width:28px;height:28px;border:none;background:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;opacity:.75;transition:opacity .12s}
-.vol-btn:hover{opacity:1}
+.vol-btn{width:30px;height:30px;border-radius:50%;border:0.5px solid var(--b2);background:none;color:var(--ac);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:all .12s}
+.vol-btn:hover{border-color:var(--ac);background:var(--acd)}
 .vol-slider-wrap{width:0;overflow:visible;transition:width .2s ease;display:flex;align-items:center;}
 .vol-wrap:hover .vol-slider-wrap,.vol-wrap:focus-within .vol-slider-wrap{width:80px}
 .vol-range{width:66px;margin:0 5px;height:3px;-webkit-appearance:none;appearance:none;background:linear-gradient(to right, var(--ac) 100%, var(--b2) 100%);border-radius:2px;outline:none;cursor:pointer;}
@@ -596,7 +674,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 
 <!-- topbar -->
 <div class="top">
-  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.0f</span></div>
+  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.2j</span></div>
   <div class="tmid">
     <div class="dot" id="DOT"></div>
     <span class="tst" id="TST"></span>
@@ -606,8 +684,12 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
     <button class="btn" id="RPAUSE" onclick="togglePause()" style="display:none"></button>
     <button class="btn ron" id="RSTOP" onclick="stopRec()" style="display:none"></button>
     <button class="btn" id="EXPORTBTN" onclick="doExportDialog()"></button>
-    <button class="btn" id="CLEARBTN" onclick="clearAll()"></button>
-    <button class="btn" id="THMBTN" onclick="toggleTheme()">🌙</button>
+    <button class="btn" id="SAVESESSIONBTN" onclick="saveSession()" title="Save session (.asr)"></button>
+    <button class="btn" id="LOADSESSIONBTN" onclick="loadSessionPick()" title="Load session (.asr)"></button>
+    <button class="btn btn-danger" id="CLEARBTN" onclick="clearAll()"></button>
+    <input type="file" id="SESSION_FILE_INPUT" accept=".asr" style="display:none" onchange="loadSessionFile(this)">
+    <input type="file" id="MP3_FILE_INPUT" accept=".mp3" style="display:none" onchange="loadMp3File(this)">
+    <button class="btn" id="THMBTN" onclick="toggleTheme()" style="display:inline-flex;align-items:center;justify-content:center;padding:6px 8px"></button>
     <button class="lang-toggle" id="LANGBTN" onclick="toggleUILang()"></button>
     <button class="btn act" id="SETTINGSBTN" onclick="openSettings()"></button>
   </div>
@@ -686,7 +768,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
           oninput="playerSeek(this.value)" onmousedown="playerSeeking=true" onmouseup="playerSeeking=false">
         <span class="pbar-time" id="PBAR_TIME">0:00 / 0:00</span>
         <div class="vol-wrap" id="VOL_WRAP">
-          <button class="vol-btn" id="VOL_BTN" onclick="toggleMute()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/> <path d="M12.5 3.5C14 4.8 15 6.3 15 8C15 9.7 14 11.2 12.5 12.5" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+          <button class="vol-btn" id="VOL_BTN" onclick="toggleMute()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
           <div class="vol-slider-wrap">
             <input class="vol-range" type="range" id="VOL_SLIDER"
               min="0" max="100" value="100" step="1" oninput="setVolume(this.value)">
@@ -909,7 +991,9 @@ function applyUILang(){
   // topbar
   _el('RBT').textContent      = t.btnStart;
   _el('EXPORTBTN').textContent = t.btnExport;
-  _el('CLEARBTN').textContent  = t.btnClear;
+  _el('CLEARBTN').textContent       = t.btnClear;
+  _el('SAVESESSIONBTN').textContent = t.btnSaveSession;
+  _el('LOADSESSIONBTN').textContent = t.btnLoadSession;
   _el('THMBTN').title          = t.btnThemeTitle;
   _el('SETTINGSBTN').textContent = t.btnSettings;
   _el('RSTOP').textContent = t.btnStop;
@@ -1014,6 +1098,18 @@ function applyUILang(){
   const tst = _el('TST');
   if(tst && (recState==='idle'||recState==='ready')) tst.textContent = t.statusReady;
   if(tst && recState==='idle' && tst.textContent==='') tst.textContent = t.statusConnecting;
+
+  // 更新已有字幕卡片上的编辑/保存/翻译按钮文字
+  document.querySelectorAll('.ent .edit-btn').forEach(btn => {
+    btn.textContent = t.btnEditOrig;
+    btn.title       = t.titleEditOrig;
+  });
+  document.querySelectorAll('.ent .edit-btn-save').forEach(btn => {
+    btn.textContent = t.btnSaveOrig;
+  });
+  document.querySelectorAll('.ent .edit-btn-translate').forEach(btn => {
+    btn.textContent = t.btnTranslateOrig;
+  });
 }
 
 // ── ASR 识别语言锁定 ──────────────────────────────────────────
@@ -1066,17 +1162,35 @@ function showToast(msg){
   _toastTimer = setTimeout(()=>t.classList.remove('show'), 4000);
 }
 
+// ── Theme SVG icons ───────────────────────────────────────────
+const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" fill="white"/></svg>`;
+const ICON_SUN  = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" fill="white"/><line x1="12" y1="1" x2="12" y2="3" stroke-width="2.8"/><line x1="12" y1="21" x2="12" y2="23" stroke-width="2.8"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke-width="2.8"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke-width="2.8"/><line x1="1" y1="12" x2="3" y2="12" stroke-width="2.8"/><line x1="21" y1="12" x2="23" y2="12" stroke-width="2.8"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke-width="2.8"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-width="2.8"/></svg>`;
+
+function _setThemeIcon(isLight){
+  const b = _el('THMBTN');
+  if(!b) return;
+  b.innerHTML = isLight ? ICON_MOON : ICON_SUN;
+  // light mode: moon icon on dark-grey bg; dark mode: sun icon on light-grey bg
+  if(isLight){
+    b.style.background   = '#3a3f47';
+    b.style.borderColor  = '#3a3f47';
+    b.style.color        = '#c8cdd5';
+  } else {
+    b.style.background   = '#d0d4da';
+    b.style.borderColor  = '#d0d4da';
+    b.style.color        = '#ffffff';
+  }
+}
 function toggleTheme(){
   const isLight = document.documentElement.classList.toggle('light');
-  _el('THMBTN').textContent = isLight ? '🌑' : '🌙';
+  _setThemeIcon(isLight);
   localStorage.setItem('asrlive_theme', isLight ? 'light' : 'dark');
 }
 (function(){
   const saved = localStorage.getItem('asrlive_theme');
-  if(saved==='light'){
-    document.documentElement.classList.add('light');
-    document.addEventListener('DOMContentLoaded', ()=>{ const b=_el('THMBTN'); if(b) b.textContent='🌑'; });
-  }
+  const isLight = saved === 'light';
+  if(isLight) document.documentElement.classList.add('light');
+  document.addEventListener('DOMContentLoaded', ()=>{ _setThemeIcon(isLight); });
 })();
 
 function connect(){
@@ -1106,11 +1220,13 @@ function handle(m){
   else if(m.type==='recording') setRec(m.value, m);
   else if(m.type==='asr_partial') showLive(m.raw, m.lang, m.asr_ms);
   else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms, m.llm_ms); }
+  else if(m.type==='entry_updated'){ applyEntryUpdate(m); }
   else if(m.type==='cleared'){
     SC.innerHTML = `<div class="empty" id="HINT">${T('emptyHint')}</div>`;
     sentCnt=0; charCnt=0; MC.textContent='0'; MCH.textContent='0';
     if(_audio){ _audio.pause(); _audio=null; }
     _activeEntry=null; _entryTimes=[];
+    _recStartWallMs = null;   // 加载会话时清除旧录音基准，避免 fallback 偏移算错
     const pb=_el('PBAR'); if(pb) pb.classList.add('hidden');
     const pp=_el('PBAR_PLAYER'), pm=_el('PBAR_MERGE');
     if(pp) pp.style.display='none';
@@ -1120,9 +1236,28 @@ function handle(m){
     const btn=_el('PBAR_BTN'); if(btn) btn.textContent='▶';
   }
   else if(m.type==='export') dlFile(m.content, m.format);
+  else if(m.type==='session_loaded'){
+    _markSaved();
+    const label = typeof T('sessionLoadOk') === 'function'
+      ? T('sessionLoadOk')(m.count) : T('sessionLoadOk');
+    TST.textContent = label;
+    // MP3 处理：后端已判断文件是否存在
+    // 若文件存在，后端会广播 rec_saved，播放条自动加载
+    // 若文件不存在但 .asr 中有 mp3_filename，提示用户手动选择
+    if(m.mp3 && !m.mp3_found){
+      // 文件曾记录但当前不可访问，显示 toast + 播放条提示按钮
+      showToast(T('sessionMp3Missing'));
+      _showMp3MissingBar(m.mp3.split('/').pop());
+    } else if(!m.mp3){
+      // 会话本来就没有录音，不提示
+    }
+    // mp3_found 为 true 时 rec_saved 已处理，不重复提示
+  }
   else if(m.type==='settings'){ G.settings=m.settings; applySettings(m.settings); applyAsrLangUI(m.settings.asr_language||null); }
   else if(m.type==='save_done'){
     showToast(T('toastSaved').replace('{name}', m.path.split('/').pop()));
+    _markSaved();
+    window.dispatchEvent(new Event('_save_done'));
   }
   else if(m.type==='save_cancelled'){}
   else if(m.type.startsWith('dl_')) handleDlMsg(m);
@@ -1227,28 +1362,145 @@ function _applyRecUI(){
   }
 }
 
+// ── 未保存状态跟踪 ───────────────────────────────────────────
+let _unsaved = false;   // true = 有字幕且自上次保存/加载/清空后新增了条目
+
+function _markUnsaved(){ _unsaved = true; }
+function _markSaved()  { _unsaved = false; }
+
+// ── 状态横幅（已保存 / 放弃保存）────────────────────────────
+let _bannerTimer;
+function showBanner(msg){
+  let b = _el('STATUS_BANNER');
+  if(!b){ b=document.createElement('div'); b.id='STATUS_BANNER'; b.className='status-banner'; document.body.appendChild(b); }
+  b.textContent = msg;
+  b.style.display = '';
+  clearTimeout(_bannerTimer);
+  _bannerTimer = setTimeout(()=>{ b.style.display='none'; }, 2000);
+}
+
+// ── 自定义 confirm modal ─────────────────────────────────────
+// buttons: [{label, cls, value}, ...]  → returns Promise<value>
+function showModal(title, body, buttons){
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'cfm-ov';
+    const btnsHtml = buttons.map((b,i)=>
+      `<button class="cfm-btn ${b.cls}" data-idx="${i}">${b.label}</button>`
+    ).join('');
+    ov.innerHTML = `<div class="cfm-box">
+      <div class="cfm-body"><strong style="display:block;margin-bottom:6px;font-size:15px;color:var(--tx)">${title}</strong>${body}</div>
+      <div class="cfm-foot">${btnsHtml}</div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelectorAll('.cfm-btn').forEach(btn => {
+      btn.addEventListener('click', ()=>{
+        const val = buttons[parseInt(btn.dataset.idx)].value;
+        ov.remove();
+        resolve(val);
+      });
+    });
+  });
+}
+
+// ── 检查未保存，若需要则弹窗；返回 'saved'|'discard'|'cancel' ──
+async function checkUnsaved(){
+  if(!_unsaved) return 'discard'; // 无未保存内容，直接继续
+  const choice = await showModal(
+    T('cfmTitle'), T('cfmBody'),
+    [
+      {label: T('cfmCancel'),  cls: 'cfm-ghost',   value: 'cancel'},
+      {label: T('cfmDiscard'), cls: 'cfm-danger',  value: 'discard'},
+      {label: T('cfmSave'),    cls: 'cfm-primary', value: 'save'},
+    ]
+  );
+  if(choice === 'save'){
+    // 触发保存并等待 save_done（最多 15s）
+    saveSession();
+    await new Promise(res => {
+      const tid = setTimeout(()=>{ window.removeEventListener('_save_done', h); res(); }, 15000);
+      function h(){ clearTimeout(tid); window.removeEventListener('_save_done', h); res(); }
+      window.addEventListener('_save_done', h, {once:true});
+    });
+    showBanner(T('bannerSaved'));
+    _markSaved();
+    await new Promise(r=>setTimeout(r,2000));
+    return 'saved';
+  } else if(choice === 'discard'){
+    showBanner(T('bannerDiscarded'));
+    await new Promise(r=>setTimeout(r,2000));
+    return 'discard';
+  }
+  return 'cancel';
+}
+
+// ── 清空 player bar ───────────────────────────────────────────
+function _clearPlayer(){
+  if(_audio){ _audio.pause(); _audio=null; }
+  _activeEntry=null; _entryTimes=[];
+  const pb=_el('PBAR'); if(pb) pb.classList.add('hidden');
+  const pp=_el('PBAR_PLAYER'), pm=_el('PBAR_MERGE');
+  if(pp) pp.style.display='none';
+  if(pm) pm.style.display='none';
+  const seek=_el('PBAR_SEEK'); if(seek) seek.value=0;
+  const timeEl=_el('PBAR_TIME'); if(timeEl) timeEl.textContent='0:00 / 0:00';
+  const btn=_el('PBAR_BTN'); if(btn) btn.textContent='▶';
+}
+
+// ── clearAll（自定义弹窗）────────────────────────────────────
+async function clearAll(){
+  const choice = await showModal(
+    T('cfmClearTitle'), T('cfmClearBody'),
+    [
+      {label: T('cfmCancel'), cls: 'cfm-ghost',  value: 'cancel'},
+      {label: T('cfmClearOk'), cls: 'cfm-danger', value: 'ok'},
+    ]
+  );
+  if(choice !== 'ok') return;
+  send({action:'clear'});
+  _clearPlayer();
+  _markSaved();
+}
+
+function loadSessionPick(){
+  _doLoadSessionPick();
+}
+
+async function _doLoadSessionPick(){
+  const r = await checkUnsaved();
+  if(r === 'cancel') return;
+  // 清空
+  send({action:'clear'});
+  _clearPlayer();
+  sentCnt=0; charCnt=0;
+  if(MC) MC.textContent='0';
+  if(MCH) MCH.textContent='0';
+  _markSaved();
+  _el('SESSION_FILE_INPUT').value = '';
+  _el('SESSION_FILE_INPUT').click();
+}
+
 function toggleRec(){
   if(recState==='idle'||recState==='ready'){
-    // If restarting after a previous session, clear subtitles and player first
-    if(recState==='ready'){
-      send({action:'clear'});
-      // Also reset player bar immediately without waiting for server echo
-      if(_audio){ _audio.pause(); _audio=null; }
-      _activeEntry=null; _entryTimes=[];
-      const pb=_el('PBAR'); if(pb) pb.classList.add('hidden');
-      const pp=_el('PBAR_PLAYER'), pm=_el('PBAR_MERGE');
-      if(pp) pp.style.display='none';
-      if(pm) pm.style.display='none';
-      const seek=_el('PBAR_SEEK'); if(seek) seek.value=0;
-      const timeEl=_el('PBAR_TIME'); if(timeEl) timeEl.textContent='0:00 / 0:00';
-      const btn=_el('PBAR_BTN'); if(btn) btn.textContent='▶';
-    }
-    recState='recording';
-    recSec=0; recTi=null;
-    _recStartWallMs = Date.now(); // ← exact moment recording starts
-    send({action:'start'});
-    _applyRecUI();
+    _doToggleRec();
   }
+}
+
+async function _doToggleRec(){
+  const r = await checkUnsaved();
+  if(r === 'cancel') return;
+  // 清空字幕和 mp3
+  send({action:'clear'});
+  _clearPlayer();
+  sentCnt=0; charCnt=0;
+  if(MC) MC.textContent='0';
+  if(MCH) MCH.textContent='0';
+  _markSaved();
+  recState='recording';
+  recSec=0; recTi=null;
+  _recStartWallMs = Date.now();
+  send({action:'start'});
+  _applyRecUI();
 }
 function togglePause(){
   if(recState==='recording'){
@@ -1288,9 +1540,9 @@ function setVolume(val){
   if(_audio) _audio.volume=val/100;
   const btn=_el('VOL_BTN');
   if(btn){
-    if(val===0) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <line x1="11" y1="5.5" x2="15" y2="10.5" stroke="#d04040" stroke-width="1.4" stroke-linecap="round"/> <line x1="15" y1="5.5" x2="11" y2="10.5" stroke="#d04040" stroke-width="1.4" stroke-linecap="round"/></svg>';
-    else if(val<40) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg>';
-    else btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M2 5.5H5L9 2.5V13.5L5 10.5H2V5.5Z" fill="white" stroke="#555" stroke-width="1" stroke-linejoin="round"/> <path d="M11 5C11.8 5.8 12.3 6.8 12.3 8C12.3 9.2 11.8 10.2 11 11" stroke="#555" stroke-width="1.2" stroke-linecap="round"/> <path d="M12.5 3.5C14 4.8 15 6.3 15 8C15 9.7 14 11.2 12.5 12.5" stroke="#555" stroke-width="1.2" stroke-linecap="round"/></svg>';
+    if(val===0) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15" stroke="var(--red)"/><line x1="17" y1="9" x2="23" y2="15" stroke="var(--red)"/></svg>';
+    else if(val<40) btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+    else btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
   }
   _updateVolTrack(val);
 }
@@ -1330,7 +1582,10 @@ function playerLoad(url){
 function _buildEntryTimes(){
   _entryTimes = [];
 
-  // Fallback: recording start as seconds-since-midnight (used only when mp3_offset_s absent)
+  // Fallback base: only used for entries that lack mp3_offset_s
+  // When _recStartWallMs is null (e.g. loaded session), fallback computes
+  // relative to the first entry's wall-clock, which gives correct relative order
+  // but not absolute MP3 positions — those entries will be skipped from sync.
   let recBaseSec = null;
   if(_recStartWallMs){
     const d = new Date(_recStartWallMs);
@@ -1344,7 +1599,10 @@ function _buildEntryTimes(){
       _entryTimes.push({el, sec: parseFloat(el.dataset.mp3Offset)});
       return;
     }
-    // FALLBACK: derive from HH:MM:SS wall-clock (history / old entries)
+    // FALLBACK: only when mp3_offset_s absent AND we have a valid recording base
+    // (skip fallback if _recStartWallMs is null — loaded sessions without offset
+    //  cannot be reliably mapped to MP3 positions)
+    if(recBaseSec === null) return;
     const tsEl = el.querySelector('.ets');
     if(!tsEl) return;
     const ts = tsEl.textContent.trim();
@@ -1357,11 +1615,12 @@ function _buildEntryTimes(){
   if(_entryTimes.length===0) return;
 
   // Resolve any fallback entries that still need wall-clock math
-  const base = recBaseSec !== null ? recBaseSec
-    : (_entryTimes.find(e=>e.wallSec!==undefined)||{wallSec:0}).wallSec;
-  _entryTimes.forEach(e=>{
-    if(e.sec === undefined) e.sec = Math.max(0, e.wallSec - base);
-  });
+  if(recBaseSec !== null){
+    const base = recBaseSec;
+    _entryTimes.forEach(e=>{
+      if(e.sec === undefined) e.sec = Math.max(0, e.wallSec - base);
+    });
+  }
 
   _entryTimes.sort((a,b)=>a.sec-b.sec);
 }
@@ -1471,12 +1730,14 @@ function addEntry(e){
       <span class="badge ${cls}">${TL(cls)}</span>
       <span class="ets">${e.timestamp}</span>
       <span class="elat">ASR ${e.asr_ms}ms · LLM ${e.llm_ms}ms</span>
+      <button class="edit-btn" title="${T('titleEditOrig')}" onclick="toggleEditOrig(event,'${e.id}')">${T('btnEditOrig')}</button>
     </div>
     <div class="orig" id="orig-${e.id}" data-plain="${escHtml(e.corrected).replace(/"/g,'&quot;')}">${escHtml(e.corrected)}</div>
     ${transHtml?`<div class="tblock">${transHtml}</div>`:''}
   `;
   SC.appendChild(div);
   sentCnt++; charCnt+=(e.corrected||'').length;
+  _markUnsaved();
   MC.textContent=sentCnt; MCH.textContent=charCnt;
   if(autoScroll) scrollBot();
 
@@ -1490,6 +1751,63 @@ function addEntry(e){
     if(idx === -1) _entryTimes.push(item);
     else _entryTimes.splice(idx, 0, item);
   }
+}
+
+// ── 应用后端返回的 entry_updated（重翻译结果）───────────────
+function applyEntryUpdate(m){
+  const id   = m.id;
+  const card = document.querySelector(`.ent[data-id="${id}"]`);
+  if(!card) return;
+
+  // 更新原文
+  const origEl = _el('orig-' + id);
+  if(origEl && origEl.tagName !== 'TEXTAREA'){
+    origEl.textContent   = m.corrected;
+    origEl.dataset.plain = m.corrected.toLowerCase();
+  }
+
+  // 更新语言徽标
+  const cls    = lc(m.language);
+  const badge  = card.querySelector('.badge');
+  if(badge){
+    badge.className = `badge ${cls}`;
+    badge.textContent = TL(cls);
+  }
+  // 更新卡片语言边框色
+  card.className = `ent ${cls}`;
+
+  // 重建翻译区
+  const tmap   = (G.settings && G.settings.translate_map) || {};
+  const revMap = {};
+  Object.entries(tmap).forEach(([cn,en]) => { revMap[en] = cn; });
+
+  const transEntries = Object.entries(m.translations || {});
+  let transHtml = '';
+  transEntries.forEach(([ln, tx]) => {
+    const code = tc(ln);
+    if(code === cls) return; // 跳过与原文同语言
+    const col   = langColor(code);
+    const label = TL(code);
+    const safeQ = escHtml(tx).replace(/"/g, '&quot;');
+    transHtml += `<div class="trow"><span class="tlbl" style="color:${col}">${label}</span><span class="tt" data-plain="${safeQ}" style="color:${col};opacity:.85">${escHtml(tx)}</span></div>`;
+  });
+
+  let tblock = card.querySelector('.tblock');
+  if(transHtml){
+    if(!tblock){
+      tblock = document.createElement('div');
+      tblock.className = 'tblock';
+      card.appendChild(tblock);
+    }
+    tblock.style.opacity = '1';
+    tblock.innerHTML = transHtml;
+  } else if(tblock){
+    tblock.remove();
+  }
+
+  // 同步搜索索引
+  card.dataset.raw = m.corrected.toLowerCase() + ' ' +
+    Object.values(m.translations || {}).join(' ').toLowerCase();
 }
 
 function showLive(raw,lang,asr_ms){
@@ -1706,7 +2024,179 @@ function dlFile(content,fmt){
 }
 
 // ── Utilities ─────────────────────────────────────────────
-function clearAll(){ if(confirm(T('clearConfirm'))) send({action:'clear'}); }
+
+
+// ── 编辑原文 ────────────────────────────────────────────────
+// ── 编辑原文：进入 / 退出编辑状态 ─────────────────────────
+function startEditOrig(id){
+  const origEl = _el('orig-' + id);
+  const card   = origEl ? origEl.closest('.ent') : null;
+  if(!origEl || !card) return;
+  if(origEl.tagName === 'TEXTAREA') return; // 已在编辑
+
+  const cur = origEl.textContent;
+  const ta  = document.createElement('textarea');
+  ta.className = 'orig-edit';
+  ta.id        = 'orig-' + id;
+  ta.value     = cur;
+  ta.rows      = Math.max(2, Math.ceil(cur.length / 40));
+  origEl.replaceWith(ta);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  // 替换编辑按钮 → 保存 + 翻译
+  const editBtn = card.querySelector('.edit-btn');
+  if(editBtn){
+    const savBtn = document.createElement('button');
+    savBtn.className = 'edit-btn edit-btn-save';
+    savBtn.textContent = T('btnSaveOrig');
+    savBtn.onclick = (ev) => { ev.stopPropagation(); commitEditOrig(id, false); };
+
+    const trnBtn = document.createElement('button');
+    trnBtn.className = 'edit-btn edit-btn-translate';
+    trnBtn.textContent = T('btnTranslateOrig');
+    trnBtn.onclick = (ev) => { ev.stopPropagation(); commitEditOrig(id, true); };
+
+    editBtn.replaceWith(savBtn);
+    savBtn.insertAdjacentElement('afterend', trnBtn);
+  }
+
+  // Escape 取消
+  ta.addEventListener('keydown', ev => {
+    if(ev.key === 'Escape'){ ev.stopPropagation(); cancelEditOrig(id, cur); }
+  });
+}
+
+function cancelEditOrig(id, originalText){
+  const ta   = _el('orig-' + id);
+  const card = ta ? ta.closest('.ent') : null;
+  if(!ta || !card) return;
+
+  const div = document.createElement('div');
+  div.className       = 'orig';
+  div.id              = 'orig-' + id;
+  div.dataset.plain   = originalText.toLowerCase();
+  div.textContent     = originalText;
+  ta.replaceWith(div);
+  _restoreEditBtn(card, id);
+}
+
+function commitEditOrig(id, doTranslate){
+  const ta   = _el('orig-' + id);
+  const card = ta ? ta.closest('.ent') : null;
+  if(!ta || !card) return;
+
+  const newText = ta.value.trim();
+
+  // 用新文本替换 textarea → div.orig
+  const div = document.createElement('div');
+  div.className     = 'orig';
+  div.id            = 'orig-' + id;
+  div.dataset.plain = newText.toLowerCase();
+  div.textContent   = newText;
+  ta.replaceWith(div);
+
+  // 恢复编辑按钮
+  _restoreEditBtn(card, id);
+
+  // 同步搜索索引
+  const tblock   = card.querySelector('.tblock');
+  const transText = tblock ? tblock.innerText.toLowerCase() : '';
+  card.dataset.raw = newText.toLowerCase() + ' ' + transText;
+
+  if(doTranslate){
+    // 显示翻译中状态
+    const tblockEl = card.querySelector('.tblock');
+    if(tblockEl) tblockEl.style.opacity = '0.4';
+    // 发给后端重新翻译
+    send({ action: 'retranslate', id: String(id), text: newText });
+  }
+}
+
+function _restoreEditBtn(card, id){
+  // 移除保存/翻译按钮，恢复编辑按钮
+  card.querySelectorAll('.edit-btn-save,.edit-btn-translate').forEach(b => b.remove());
+  const eHead = card.querySelector('.eHead');
+  if(eHead && !eHead.querySelector('.edit-btn')){
+    const btn = document.createElement('button');
+    btn.className = 'edit-btn';
+    btn.title     = T('titleEditOrig');
+    btn.textContent = T('btnEditOrig');
+    btn.onclick = (ev) => { ev.stopPropagation(); startEditOrig(id); };
+    eHead.appendChild(btn);
+  }
+}
+
+// 保持旧入口兼容（addEntry 里 onclick 调用此）
+function toggleEditOrig(evt, id){
+  evt.stopPropagation();
+  startEditOrig(id);
+}
+
+// ── 保存 / 加载会话 (.asr) ────────────────────────────────────
+function saveSession(){
+  send({ action: 'save_session' });
+}
+
+
+
+function loadSessionFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.asr')){
+    alert(T('sessionLoadErr')); input.value=''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    try {
+      const parsed = JSON.parse(content);
+      if(!Array.isArray(parsed.entries)){
+        alert(T('sessionLoadErr')); return;
+      }
+    } catch(_){
+      alert(T('sessionLoadErr')); return;
+    }
+    send({ action: 'load_session', content });
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+// ── MP3 文件不在原路径时：在播放条显示「手动选择」按钮 ────────
+function _showMp3MissingBar(origName){
+  const pb = _el('PBAR');
+  const pm = _el('PBAR_MERGE');
+  const pp = _el('PBAR_PLAYER');
+  if(!pb) return;
+  pb.classList.remove('hidden');
+  if(pp) pp.style.display = 'none';
+  if(pm){
+    pm.style.display = 'flex';
+    // 显示提示文字 + 手动选择按钮
+    const btn = document.createElement('button');
+    btn.className = 'pbar-follow';
+    btn.style.cssText = 'cursor:pointer;border:0.5px solid var(--b2);border-radius:4px;padding:2px 8px;background:none;color:var(--ac)';
+    btn.textContent = T('sessionMp3Pick');
+    btn.onclick = () => { _el('MP3_FILE_INPUT').value=''; _el('MP3_FILE_INPUT').click(); };
+    const txt = document.createElement('span');
+    txt.textContent = T('sessionMp3Missing').replace('{name}', origName) + ' ';
+    pm.innerHTML = '';
+    pm.appendChild(txt);
+    pm.appendChild(btn);
+  }
+}
+
+// 用户手动选择 MP3 文件后，用 Object URL 直接加载到播放条
+function loadMp3File(input){
+  const file = input.files[0];
+  if(!file) return;
+  // 释放旧的 Object URL（如有）
+  if(G._mp3ObjectUrl){ URL.revokeObjectURL(G._mp3ObjectUrl); G._mp3ObjectUrl = null; }
+  const url = URL.createObjectURL(file);
+  G._mp3ObjectUrl = url;
+  playerLoad(url);
+  showToast(T('sessionMp3Ok').replace('{name}', file.name));
+}
 function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 OV.addEventListener('click',e=>{ if(e.target===OV) closeSettings(); });
 EV.addEventListener('click',e=>{ if(e.target===EV) EV.style.display='none'; });

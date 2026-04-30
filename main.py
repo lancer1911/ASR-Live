@@ -1,5 +1,5 @@
 """
-ASR Live v4.0f — 主入口
+ASR Live v4.1f — 主入口
 用法：
   浏览器模式：python main.py          (在浏览器访问 http://localhost:17433)
   原生窗口：  python main.py --window
