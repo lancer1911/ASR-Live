@@ -1,307 +1,264 @@
 # ASR Live
 
-> 全离线实时多语言语音识别 + LLM 语义矫正 + 多语言翻译  
-> 专为 Apple Silicon Mac 优化，基于 MLX 原生框架，完全不联网
+> Fully offline real-time multilingual speech recognition + LLM semantic correction + multilingual translation  
+> Built exclusively for Apple Silicon — requires an M-series Mac with 24 GB RAM or more
 
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?logo=apple)
+![Platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon%20only-black?logo=apple)
+![RAM](https://img.shields.io/badge/RAM-24%20GB%20minimum-red)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python)
 ![MLX](https://img.shields.io/badge/MLX-0.31%2B-orange)
-![Version](https://img.shields.io/badge/version-4.0-informational)
+![Version](https://img.shields.io/badge/version-4.0f-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-## 功能特性
+## ⚠️ Hardware Requirements
 
-- **全程离线** — 语音识别、矫正、翻译均在本地运行，无数据上传，断网也能正常使用
-- **原生 .app** — 打包为独立 macOS 应用，双击启动，无需终端
-- **实时近同步字幕** — VAD 检测句尾停顿后立即识别，总时滞约 0.5–2 秒
-- **三语自动检测** — 中文、英文、日文自动识别，同时支持韩、法、德、西班牙文翻译
-- **智能翻译切换** — 说中文时显示英日译文，说英文时切换为中日，同语言不重复
-- **LLM 语义矫正** — Qwen3 修正错别字、专业术语、标点，利用上下文提升准确率
-- **场景术语提示** — 输入领域描述和专业词汇，同时增强 Whisper 和 LLM 的识别精度
-- **幻觉过滤** — 自动检测并丢弃 Whisper 的重复词幻觉输出
-- **同步录音** — 全程同步录制，停止后弹出原生保存对话框，支持 64–320kbps MP3
-- **搜索高亮** — 实时过滤字幕，关键词高亮显示，含一键清除按钮
-- **深色 / 浅色主题** — 一键切换，偏好自动持久化
-- **多格式导出** — TXT、SRT、JSON、Markdown，可按语言单独导出，原生保存面板
-- **动态模型选择** — 自动扫描本地已下载模型，无需手动填写路径
-- **首次下载引导** — 缺少模型时自动弹出引导界面，实时显示下载进度
+ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Qwen3 LLM — entirely on-device using Apple's MLX framework. **This is not optional software that degrades gracefully on lower-spec hardware.** Both models must fit in unified memory at the same time.
+
+| | Minimum | Recommended |
+|---|---|---|
+| **Chip** | Apple M1 | M2 Pro / M3 / M4 or later |
+| **Unified Memory** | **24 GB** | **48 GB** |
+| **Storage** | 15 GB free | 30 GB free |
+| **macOS** | 13 Ventura | 14 Sonoma or later |
+
+> **Why 24 GB?** The default model pair (whisper-large-v3-turbo ≈ 3 GB + Qwen3-14B-4bit ≈ 8 GB) consumes roughly 11–13 GB for the models alone. macOS, the UI, and working buffers need the rest. On 16 GB machines the system will thrash or crash under load. If you only have 16 GB, use a smaller LLM such as Qwen3-8B-4bit and accept reduced translation quality.
 
 ---
 
-## 系统要求
+## Features
 
-| 项目 | 要求 |
-|------|------|
-| 硬件 | Apple Silicon Mac（M1 及以上） |
-| 内存 | 建议 24GB+，推荐 48GB（可同时常驻大模型） |
-| 系统 | macOS 13 Ventura 及以上 |
-| Python | 3.11 – 3.14（运行时）/ 3.11（打包用） |
-| ffmpeg | 用于 MP3 录音编码 |
+- **Fully offline** — Recognition, correction, and translation run entirely locally. No audio or text ever leaves your machine.
+- **Native .app** — Ships as a double-click macOS application; no terminal required after initial setup.
+- **Real-time subtitles** — VAD-triggered sentence segmentation delivers results in approximately 0.5–2 seconds end-to-end.
+- **Three-language auto-detection** — Recognises Chinese, English, and Japanese in real time, with optional translation into Korean, French, German, and Spanish.
+- **ASR language lock** — Pin Whisper to a specific language (Auto / Chinese / English / Japanese) to prevent mis-detection in monolingual sessions.
+- **LLM semantic correction** — Qwen3 fixes homophones, punctuation, and domain terminology using recent conversational context.
+- **Scenario and terminology prompts** — A free-text field is injected into both Whisper's `initial_prompt` and the LLM system prompt. List key terms directly for best results (see Settings section).
+- **Segmented MP3 recording** — Audio is written in 5-minute segments during the session and merged into a single timestamped MP3 on stop. Pause and resume without losing audio.
+- **Microphone software gain** — Boost the captured signal up to 4× directly in the app when macOS restricts the hardware mic level.
+- **Subtitle playback sync** — An inline audio player lets you replay the recording while the transcript scrolls in lock-step with the audio position.
+- **Search and highlight** — Filter the live transcript by keyword with real-time highlighting.
+- **Dark / light themes** — One-click toggle, persisted across sessions.
+- **Multi-format export** — TXT, SRT, JSON, and Markdown, with per-language filtering and a native macOS save panel.
+- **Built-in model downloader** — First-run wizard detects missing models and streams download progress directly in the UI.
+- **Hallucination filtering** — Whisper outputs with more than 50% repeated tokens are automatically discarded.
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install system dependencies
 
 ```bash
-# 安装 ffmpeg（录音功能需要）
+# Required for MP3 encoding
 brew install ffmpeg
+```
 
-# 创建虚拟环境
+### 2. Create the runtime environment
+
+```bash
 python3 -m venv ~/asr-env
 source ~/asr-env/bin/activate
-
-# 安装 Python 依赖
 pip install -r requirements.txt
 pip install onnxruntime pywebview
 ```
 
-### 2. 下载模型
+### 3. Download models
 
 ```bash
-# ASR 模型（推荐，约 3GB）
-hf download mlx-community/whisper-large-v3-turbo
+# ASR model — recommended (~3 GB)
+huggingface-cli download mlx-community/whisper-large-v3-turbo
 
-# 或最高精度版本（约 6GB）
-hf download mlx-community/whisper-large-v3-mlx
+# ASR model — highest accuracy (~6 GB, slower)
+# huggingface-cli download mlx-community/whisper-large-v3-mlx
 
-# LLM 矫正与翻译模型（约 8GB）
-hf download mlx-community/Qwen3-14B-4bit
+# LLM for correction and translation (~8 GB)
+huggingface-cli download mlx-community/Qwen3-14B-4bit
 ```
 
-> 模型缓存在 `~/.cache/huggingface/hub/`，下载一次永久离线可用。  
-> 也可以启动应用后通过内置引导界面下载。
+> Models are cached in `~/.cache/huggingface/hub/` and work offline once downloaded. You can also download them through the built-in guide after first launch.
 
-### 3. 启动应用
+### 4. Launch
 
 ```bash
 source ~/asr-env/bin/activate
-cd asr_app_v4_0
+cd asr_app_v4_0f
 python main.py
 ```
 
-启动后自动弹出原生窗口。终端会依次显示：
+A native window opens automatically. The terminal will show:
 
 ```
-[模型子进程] 预热 Whisper: mlx-community/whisper-large-v3-turbo
-[模型子进程] Whisper 就绪
-[模型子进程] 加载 LLM: mlx-community/Qwen3-14B-4bit
-[模型子进程] LLM 就绪，系统准备完毕
+[Worker] Warming up Whisper: mlx-community/whisper-large-v3-turbo
+[Worker] Whisper ready
+[Worker] Loading LLM: mlx-community/Qwen3-14B-4bit
+[Worker] LLM ready — system ready
 ```
 
-等出现「就绪」后点击「开始识别」即可（首次约 30–60 秒）。
+First startup takes approximately 30–60 seconds. Click **Start** once the status bar shows "Ready".
 
 ---
 
-## 打包为 .app
-
-打包后双击即可启动，无需终端。
-
-### 步骤
+## Packaging as a .app
 
 ```bash
-# 1. 安装 Python 3.11（打包用，与运行环境分离）
+# 1. Install Python 3.11 for packaging (separate from the runtime)
 brew install pyenv
 pyenv install 3.11.9
 
-# 2. 建立打包专用 venv（只需一次）
-cd asr_app_v4_0
+# 2. Create a dedicated build environment (one-time)
+cd asr_app_v4_0f
 ~/.pyenv/versions/3.11.9/bin/python -m venv venv_build
 source venv_build/bin/activate
 pip install py2app
 
-# 3. 打包
+# 3. Build
 rm -rf build dist
 python build_mac.py py2app
 
-# 4. 安装
+# 4. Install
 open dist/
-# 把 "ASR Live.app" 拖到 Applications 文件夹
+# Drag "ASR Live.app" to /Applications
 ```
 
-### 运行原理
+The `.app` bundle is approximately 15 MB and does not embed MLX, PyTorch, or any AI models. All large dependencies stay in `~/asr-env`.
 
-```
-双击 ASR Live.app
-  → launcher.py（Python 3.11，轻量启动器）
-  → 自动定位 ~/asr-env/bin/python3
-  → 启动 main.py（Python 3.14 + 完整依赖）
-  → 弹出原生窗口
-```
-
-.app 本身约 15MB，不内嵌 MLX/PyTorch 等大型依赖，所有 AI 模型和库保留在 `~/asr-env`。
-
-### 首次打开提示「无法验证开发者」
+**First-launch Gatekeeper warning:**
 
 ```bash
-xattr -cr /Applications/ASR\ Live.app
+xattr -cr "/Applications/ASR Live.app"
 ```
 
-或右键 → 打开 → 在弹窗中点「打开」。
+Or right-click → Open → click "Open" in the dialog.
 
 ---
 
-## 界面说明
+## Settings
 
+### ASR model
+
+Automatically lists all locally cached Whisper models. Switch between whisper-large-v3-turbo (faster) and whisper-large-v3 (more accurate) without restarting.
+
+### LLM correction model
+
+Automatically lists locally cached MLX-format LLMs — Qwen3, LLaMA, Gemma, Mistral, and others.
+
+### Scenario and terminology
+
+Enter domain background and vocabulary for the current session. The same text is applied simultaneously to both models:
+
+- **Whisper `initial_prompt`** — Biases acoustic decoding toward listed terms.
+- **LLM system prompt** — Guides semantic correction toward the correct spelling of domain terms.
+
+**Listing key terms directly produces better results than describing the scene in prose:**
+
+```text
+# Good
+Patent hearing. Terms: claims, specification, novelty, inventive step, prior art, dependent claims
+
+# Good
+Medical consultation. Terms: atrial fibrillation, LVEF, CABG, ejection fraction, sinus rhythm
+
+# Less effective
+This is a meeting about patents and medical topics.
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ ASR/LIVE v4  ● 识别中 · whisper-large-v3-turbo · Qwen3-14B │  顶栏
-│                               [导出▾] [清空] [🌙] [设置]   │
-├──────────┬────────────────────────────────────┬─────────────┤
-│          │ ▁▃▇▅▂▆▃▁▅▇▂▃▅▁▂▆▄▁▂▅▇▃▁▄▆▂       │             │
-│  录音控制 │                           00:01:23 │  ASR 时滞   │
-│  语言选择 ├────────────────────────────────────┤  LLM 时滞   │
-│  快速调节 │ 中文  00:00:12  ASR 98ms LLM 412ms │  合计时滞   │
-│  实时指标 │ 人工智能在医疗影像诊断领域的应用…    │  句数 / 字数 │
-│          │  英文  AI in medical imaging...    │  运行时长   │
-│          │  日文  医療画像診断におけるAI...    │             │
-│          ├────────────────────────────────────┤             │
-│          │ 搜索字幕内容…  ✕          [↓ 最新] │             │
-└──────────┴────────────────────────────────────┴─────────────┘
-```
+
+### ASR language lock
+
+Select **Auto** to let Whisper detect the language on each sentence, or pin to **Chinese / English / Japanese** for monolingual sessions. The lock cannot be changed while recording is active.
+
+### Translation targets
+
+Choose which languages to display as translations. The language currently being spoken is automatically excluded from translation output to avoid duplication.
+
+### Audio input
+
+| Parameter | Default | Range | Notes |
+|---|---|---|---|
+| Microphone gain | 1.5× | 1.0–4.0× | Software boost applied before VAD and Whisper |
+| End-of-sentence silence | 0.6 s | 0.2–2.0 s | Pause duration that triggers sentence segmentation |
+| VAD sensitivity | 0.45 | 0.20–0.80 | Higher = less sensitive; increase to 0.6–0.7 in noisy environments |
+| Maximum utterance length | 20 s | — | Forces segmentation if a sentence exceeds this duration |
+| Save recording | Enabled | — | Disable for transcription-only mode with no files written |
+| MP3 bitrate | 192 kbps | 64 / 128 / 192 / 320 | Applied to the merged final file |
+| Microphone device | System default | — | Supports AirPods, USB mics; click ↻ to rescan |
 
 ---
 
-## 设置说明
+## Recording
 
-### ASR 模型
-从本地已下载的 Whisper 模型中自动列出，支持 large-v3-turbo、large-v3 等。
-
-### LLM 矫正模型
-从本地已下载的 LLM 中自动列出，支持 Qwen3、LLaMA、Gemma、Mistral 等 MLX 格式。
-
-### 场景与术语
-输入当前录音的领域背景和专业词汇，**同时**作用于两个模型：
-- **Whisper `initial_prompt`** — 提升专业词汇的声学识别准确率
-- **LLM system prompt** — 提升语义矫正时的术语纠错能力
-
-示例：
-```
-这是心血管科会诊对话，涉及：心房颤动、左心室射血分数、冠状动脉旁路移植术
-```
-```
-Tech podcast about Apple. Key terms: Neural Engine, MLX, M3 Max, unified memory
-```
-
-### 翻译目标
-勾选需要输出的语言（可多选）。当前说的语言自动从译文中排除，避免重复显示。
-
-### 音频输入
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| 录音保存 | 开启 | 停止时弹出原生保存对话框 |
-| MP3 码率 | 192kbps | 可选 64 / 128 / 192 / 320kbps |
-| 句尾静音阈值 | 0.6s | 停顿多久后认为一句话结束，可调 0.2–2.0s |
-| VAD 灵敏度 | 0.45 | 越高越不敏感，嘈杂环境建议调高至 0.6–0.7 |
-| 最长单句时长 | 20s | 超过此时长强制切断识别 |
-| 麦克风设备 | 系统默认 | 支持 AirPods、USB 麦克风等，点 ↻ 刷新 |
+- Audio is buffered in 5-minute segments during the session to bound memory usage.
+- **Pause** temporarily stops the microphone stream while keeping the current session open. **Resume** appends to the same MP3.
+- After **Stop**, segments are merged in the background into a single file: `ASRLive_YYYYMMDD_HHMMSS.mp3`, saved to `~/Downloads` by default. A native save panel appears in windowed mode.
+- The **playback bar** appears automatically once the file is ready. It supports play/pause, scrubbing, volume control, and a "follow playback" mode that scrolls the transcript in sync.
+- Each transcript entry stores its precise start offset in the MP3. Clicking an entry in follow mode jumps the player to that sentence.
+- On exit, the application waits up to 30 seconds for any pending encoding to finish before quitting.
 
 ---
 
-## 导出
+## Export
 
-点击顶栏「导出 ▾」，选择语言筛选和格式后弹出原生保存面板：
+Click **Export ▾** in the top bar, choose a language filter and format, then save via the native panel.
 
-| 格式 | 说明 |
-|------|------|
-| TXT | 纯文本，每条含时间戳 |
-| SRT | 标准字幕格式，可导入视频软件 |
-| JSON | 含完整时间戳、时滞、原文、所有译文 |
-| Markdown | 适合粘贴到 Obsidian、Notion 等笔记工具 |
+| Format | Description |
+|---|---|
+| TXT | Plain text with a timestamp per entry |
+| SRT | Standard subtitle format, importable into video editors |
+| JSON | Full detail: timestamps, latency, raw ASR, corrected text, all translations |
+| Markdown | Suitable for Obsidian, Notion, or any Markdown-based tool |
 
-**语言筛选**：全部混合、仅原文（矫正后）、仅原文（ASR 原始）、或任意单一语言。选择单一语言时，该语言作为原文或译文的条目均会包含。
+**Language filter options:** all languages mixed · corrected original only · raw ASR only · any single language (includes entries where that language appears as either the original or a translation).
 
----
-
-## 录音
-
-- 开始识别时全程同步录制所有音频（含静音段）
-- 点击「停止识别」后弹出原生 macOS 保存面板选择保存位置
-- 默认文件名：`ASRLive_YYYYMMDD_HHMMSS.mp3`
-- 应用退出时若有未保存录音，自动等待编码完成（最多 30 秒）
+For long sessions, transcript history beyond the most recent 200 entries is streamed to a JSONL file in `~/Downloads` and automatically included in exports.
 
 ---
 
-## 项目结构
+## FAQ
 
-```
-asr_app_v4_0/
-├── main.py           # 应用入口，启动服务 + pywebview 原生窗口
-├── launcher.py       # .app 启动器，定位 asr-env 并调用 main.py
-├── server.py         # FastAPI 后端，WebSocket，VAD，录音，导出
-├── model_worker.py   # 独立子进程，运行 Whisper ASR 和 Qwen3 LLM
-├── downloader.py     # 首次启动模型检测与下载引导
-├── build_mac.py      # py2app 打包配置（生成 .app）
-├── requirements.txt  # Python 依赖
-└── static/
-    └── index.html    # 前端 WebUI（单文件，含全部 CSS 和 JS）
-```
+**The window shows "Connecting" for a long time after launch.**  
+The first load takes 30–60 seconds while both models are read into unified memory. Wait until the status bar shows "Ready" before interacting.
 
-### 架构设计
+**`Address already in use` on startup.**  
+`main.py` automatically kills any process holding port 17433 on launch. If the problem persists: `lsof -ti :17433 | xargs kill -9`
 
-```
-pywebview 原生窗口（WKWebView）
-    ↕ HTTP / WebSocket（localhost）
-FastAPI / uvicorn                ← 主进程（asyncio）
-    ├── VAD + 音频采集            ← 子线程（sounddevice + Silero VAD）
-    ├── 录音写入 + MP3 编码       ← 非 daemon 子线程（ffmpeg）
-    └── ModelWorker              ← 独立子进程（无 asyncio，纯同步）
-            ├── Whisper           ← MLX 原生，Metal GPU
-            └── Qwen3 LLM        ← MLX 原生，Metal GPU
-```
+**Microphone permission error: `PortAudioError -9986`.**  
+System Settings → Privacy & Security → Microphone → grant permission to Terminal or ASR Live.app.
 
-MLX 在独立子进程运行，与 pywebview 的 WKWebView 和 asyncio 完全隔离，解决 macOS Metal GPU 驱动在多上下文环境下的不稳定问题。
+**Repeated hallucinations like "nope nope nope…".**  
+The app filters these automatically. If they persist, raise VAD sensitivity to 0.6–0.7 and ensure the silence threshold is at least 0.5 s.
 
----
+**No translation output.**  
+Confirm that translation target languages are selected and saved in Settings. If the issue persists, delete `~/.asrlive_settings.json` and restart.
 
-## 常见问题
+**LLM latency is too high (>3 s).**  
+Switch to a smaller model (Qwen3-8B-4bit) or reduce the number of translation targets. Each additional target language adds one JSON field for the LLM to generate.
 
-**Q: 启动后窗口长时间显示「连接中」？**  
-A: 首次加载需要 30–60 秒（模型加载到内存），等终端出现「LLM 就绪」再操作。
+**Recording was not saved.**  
+Confirm ffmpeg is installed (`brew install ffmpeg`) and that "Save recording" is enabled in Settings.
 
-**Q: 端口被占用 `Address already in use`？**  
-A: `main.py` 启动时会自动清理旧进程，无需手动处理。若仍出现：`lsof -ti :17433 | xargs kill -9`
+**`No module named 'onnxruntime'`.**  
+`pip install onnxruntime`
 
-**Q: 麦克风权限错误 `PortAudioError -9986`？**  
-A: 系统设置 → 隐私与安全性 → 麦克风，确认 Terminal / ASR Live.app 已授权。
-
-**Q: 出现大量重复词「nope nope nope…」？**  
-A: Whisper 幻觉，程序已内置过滤。若仍出现，调高 VAD 灵敏度至 0.6–0.7。
-
-**Q: 没有翻译输出？**  
-A: 确认设置面板中已勾选翻译目标语言并保存。如仍无效，删除 `~/.asrlive_settings.json` 后重启。
-
-**Q: LLM 时滞过长（>2s）？**  
-A: 换用更小模型（Qwen3-8B-4bit），或减少翻译目标语言数量。
-
-**Q: 录音没有保存？**  
-A: 确认已安装 ffmpeg（`brew install ffmpeg`），且设置中录音开关为开启状态。
-
-**Q: `No module named 'onnxruntime'`？**  
-A: `pip install onnxruntime`
-
-**Q: 模型下载很慢或失败？**  
-A: 使用 HF 镜像：`export HF_ENDPOINT=https://hf-mirror.com`
+**Model downloads are slow or fail.**  
+Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
 
 ---
 
-## 依赖项目
+## Dependencies
 
-| 项目 | 用途 |
-|------|------|
-| [mlx-whisper](https://github.com/ml-explore/mlx-examples) | Apple Silicon 原生 Whisper 推理 |
-| [mlx-lm](https://github.com/ml-explore/mlx-examples) | Apple Silicon 原生 LLM 推理 |
-| [Silero VAD](https://github.com/snakers4/silero-vad) | 语音活动检测 |
-| [FastAPI](https://fastapi.tiangolo.com) | 后端 API 和 WebSocket |
-| [pywebview](https://pywebview.flowrl.com) | 原生 macOS 窗口（WKWebView） |
-| [sounddevice](https://python-sounddevice.readthedocs.io) | 音频采集 |
-| [ffmpeg](https://ffmpeg.org) | MP3 录音编码 |
-| [Qwen3](https://huggingface.co/Qwen) | 语义矫正和翻译 LLM |
-| [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | ASR 基础模型 |
+| Project | Purpose |
+|---|---|
+| [mlx-whisper](https://github.com/ml-explore/mlx-examples) | Native Whisper inference on Apple Silicon via MLX |
+| [mlx-lm](https://github.com/ml-explore/mlx-examples) | Native LLM inference on Apple Silicon via MLX |
+| [Silero VAD](https://github.com/snakers4/silero-vad) | Voice activity detection |
+| [FastAPI](https://fastapi.tiangolo.com) | Backend API and WebSocket server |
+| [pywebview](https://pywebview.flowrl.com) | Native macOS window (WKWebView) |
+| [sounddevice](https://python-sounddevice.readthedocs.io) | Microphone capture via PortAudio |
+| [ffmpeg](https://ffmpeg.org) | MP3 encoding for recordings |
+| [Qwen3](https://huggingface.co/Qwen) | LLM for semantic correction and translation |
+| [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | Default ASR model |
 
 ---
 
