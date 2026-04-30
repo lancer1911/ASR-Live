@@ -27,11 +27,30 @@ ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Q
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="images/screenshot_main.png" alt="Main interface — live transcription with translations" width="800">
+  <br><em>Main interface — real-time transcription with multilingual translations</em>
+</p>
+
+<p align="center">
+  <img src="images/screenshot_settings.png" alt="Settings panel" width="480">
+  <br><em>Settings panel — model selection, scenario prompts, and audio configuration</em>
+</p>
+
+<p align="center">
+  <img src="images/screenshot_playback.png" alt="Playback bar with transcript sync" width="800">
+  <br><em>Playback bar — replay recordings with transcript scrolling in sync</em>
+</p>
+
+---
+
 ## Features
 
 - **Fully offline** — Recognition, correction, and translation run entirely locally. No audio or text ever leaves your machine.
 - **Native .app** — Ships as a double-click macOS application; no terminal required after initial setup.
-- **Real-time subtitles** — VAD-triggered sentence segmentation delivers results in approximately 0.5–2 seconds end-to-end.
+- **Real-time subtitles** — Voice Activity Detection (VAD)-triggered sentence segmentation delivers results in approximately 0.5–2 seconds end-to-end.
 - **Three-language auto-detection** — Recognises Chinese, English, and Japanese in real time, with optional translation into Korean, French, German, and Spanish.
 - **ASR language lock** — Pin Whisper to a specific language (Auto / Chinese / English / Japanese) to prevent mis-detection in monolingual sessions.
 - **LLM semantic correction** — Qwen3 fixes homophones, punctuation, and domain terminology using recent conversational context.
@@ -49,14 +68,21 @@ ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Q
 
 ## Quick Start
 
-### 1. Install system dependencies
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/lancer1911/ASR-Live.git
+cd ASR-Live
+```
+
+### 2. Install system dependencies
 
 ```bash
 # Required for MP3 encoding
 brew install ffmpeg
 ```
 
-### 2. Create the runtime environment
+### 3. Create the runtime environment
 
 ```bash
 python3 -m venv ~/asr-env
@@ -65,39 +91,30 @@ pip install -r requirements.txt
 pip install onnxruntime pywebview
 ```
 
-### 3. Download models
+### 4. Download models
 
 ```bash
 # ASR model — recommended (~3 GB)
-huggingface-cli download mlx-community/whisper-large-v3-turbo
+hf download mlx-community/whisper-large-v3-turbo
 
 # ASR model — highest accuracy (~6 GB, slower)
-# huggingface-cli download mlx-community/whisper-large-v3-mlx
+# hf download mlx-community/whisper-large-v3-mlx
 
 # LLM for correction and translation (~8 GB)
-huggingface-cli download mlx-community/Qwen3-14B-4bit
+hf download mlx-community/Qwen3-14B-4bit
 ```
 
 > Models are cached in `~/.cache/huggingface/hub/` and work offline once downloaded. You can also download them through the built-in guide after first launch.
 
-### 4. Launch
+### 5. Launch
 
 ```bash
 source ~/asr-env/bin/activate
-cd asr_app_v4_0f
+cd ASR-Live
 python main.py
 ```
 
-A native window opens automatically. The terminal will show:
-
-```
-[Worker] Warming up Whisper: mlx-community/whisper-large-v3-turbo
-[Worker] Whisper ready
-[Worker] Loading LLM: mlx-community/Qwen3-14B-4bit
-[Worker] LLM ready — system ready
-```
-
-First startup takes approximately 30–60 seconds. Click **Start** once the status bar shows "Ready".
+A native window opens automatically. First startup takes approximately 30–60 seconds while both models load into memory. Click **Start** once the status bar shows "Ready".
 
 ---
 
@@ -109,7 +126,7 @@ brew install pyenv
 pyenv install 3.11.9
 
 # 2. Create a dedicated build environment (one-time)
-cd asr_app_v4_0f
+cd ASR-Live
 ~/.pyenv/versions/3.11.9/bin/python -m venv venv_build
 source venv_build/bin/activate
 pip install py2app
@@ -132,6 +149,41 @@ xattr -cr "/Applications/ASR Live.app"
 ```
 
 Or right-click → Open → click "Open" in the dialog.
+
+---
+
+## Creating a DMG for Distribution
+
+Requires [create-dmg](https://github.com/create-dmg/create-dmg): `brew install create-dmg`
+
+```bash
+# Clean up any previous attempt
+rm -rf ASR-Live/dist/dmg_src
+mkdir -p ASR-Live/dist/dmg_src
+
+# Copy the built .app and the guide PDF into the staging folder
+cp -r ASR-Live/dist/ASR\ Live.app ASR-Live/dist/dmg_src/
+cp ASR-Live/ASR_Live_Guide_EN_ZH.pdf ASR-Live/dist/dmg_src/
+
+# Remove any leftover DMG from a previous run
+rm -f ASR-Live/dist/ASR\ Live.dmg
+
+# Build the DMG
+create-dmg \
+  --volname "ASR Live" \
+  --volicon ASR-Live/dist/ASR\ Live.app/Contents/Resources/icon.icns \
+  --window-pos 200 120 \
+  --window-size 680 420 \
+  --icon-size 100 \
+  --icon "ASR Live.app" 150 200 \
+  --icon "ASR_Live_Guide_EN_ZH.pdf" 430 200 \
+  --hide-extension "ASR Live.app" \
+  --app-drop-link 150 340 \
+  ASR-Live/dist/ASR\ Live.dmg \
+  ASR-Live/dist/dmg_src/
+```
+
+The finished `ASR Live.dmg` will be placed in `ASR-Live/dist/`.
 
 ---
 
@@ -177,7 +229,7 @@ Choose which languages to display as translations. The language currently being 
 
 | Parameter | Default | Range | Notes |
 |---|---|---|---|
-| Microphone gain | 1.5× | 1.0–4.0× | Software boost applied before VAD and Whisper |
+| Microphone gain | 1.5× | 1.0–4.0× | Software boost applied before Voice Activity Detection (VAD) and Whisper |
 | End-of-sentence silence | 0.6 s | 0.2–2.0 s | Pause duration that triggers sentence segmentation |
 | VAD sensitivity | 0.45 | 0.20–0.80 | Higher = less sensitive; increase to 0.6–0.7 in noisy environments |
 | Maximum utterance length | 20 s | — | Forces segmentation if a sentence exceeds this duration |
