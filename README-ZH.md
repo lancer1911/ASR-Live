@@ -196,28 +196,26 @@ xattr -cr "/Applications/Lancer1911 ASR Live.app"
 
 需要 [create-dmg](https://github.com/create-dmg/create-dmg)：`brew install create-dmg`
 
-```bash
-rm -rf ASR-Live/dist/dmg_src
-mkdir -p ASR-Live/dist/dmg_src
-cp -r ASR-Live/dist/Lancer1911\ ASR\ Live.app ASR-Live/dist/dmg_src/
-cp ASR-Live/Lancer1911_ASR_Live_Guide_EN_ZH.pdf ASR-Live/dist/dmg_src/
-rm -f ASR-Live/dist/Lancer1911\ ASR\ Live.dmg
+>将已构建的 `.app` 和说明书 PDF 放入 `~/Desktop/ASR_Live_DMG_src/`，然后运行：
 
+```bash
 create-dmg \
   --volname "Lancer1911 ASR Live" \
-  --volicon ASR-Live/dist/Lancer1911\ ASR\ Live.app/Contents/Resources/icon.icns \
+  --volicon ~/Playground/asr_app_v4_0/icon.icns \
+  --background ~/Desktop/ASR_Live_DMG_src/dmg_background_900x556.png \
   --window-pos 200 120 \
-  --window-size 680 420 \
-  --icon-size 100 \
-  --icon "Lancer1911 ASR Live.app" 150 200 \
-  --icon "Lancer1911_ASR_Live_Guide_EN_ZH.pdf" 430 200 \
+  --window-size 900 605 \
+  --icon-size 120 \
+  --icon "Lancer1911 ASR Live.app" 213 299 \
+  --icon "Lancer1911_ASR_Live_Guide_EN_ZH.pdf" 450 451 \
   --hide-extension "Lancer1911 ASR Live.app" \
-  --app-drop-link 150 340 \
-  ASR-Live/dist/Lancer1911\ ASR\ Live.dmg \
-  ASR-Live/dist/dmg_src/
+  --app-drop-link 683 299 \
+  --disk-image-size 300 \
+  ~/Desktop/ASR_Live_DMG_src/"Lancer1911 ASR Live.dmg" \
+  ~/Desktop/ASR_Live_DMG_src/
 ```
 
-完成后 `Lancer1911 ASR Live.dmg` 保存于 `ASR-Live/dist/`。
+完成后 `Lancer1911 ASR Live.dmg` 保存于 `~/Desktop/ASR_Live_DMG_src/`。
 
 ---
 

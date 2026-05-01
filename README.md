@@ -196,34 +196,26 @@ Or right-click → Open → click "Open" in the dialog.
 
 Requires [create-dmg](https://github.com/create-dmg/create-dmg): `brew install create-dmg`
 
+>Prepare `~/Desktop/ASR_Live_DMG_src/` containing the built `.app` and the guide PDF, then run:
+
 ```bash
-# Clean up any previous attempt
-rm -rf ASR-Live/dist/dmg_src
-mkdir -p ASR-Live/dist/dmg_src
-
-# Copy the built .app and the guide PDF into the staging folder
-cp -r ASR-Live/dist/Lancer1911\ ASR\ Live.app ASR-Live/dist/dmg_src/
-cp ASR-Live/Lancer1911_ASR_Live_Guide_EN_ZH.pdf ASR-Live/dist/dmg_src/
-
-# Remove any leftover DMG from a previous run
-rm -f ASR-Live/dist/Lancer1911\ ASR\ Live.dmg
-
-# Build the DMG
 create-dmg \
   --volname "Lancer1911 ASR Live" \
-  --volicon ASR-Live/dist/ASR\ Live.app/Contents/Resources/icon.icns \
+  --volicon ~/Playground/asr_app_v4_0/icon.icns \
+  --background ~/Desktop/ASR_Live_DMG_src/dmg_background_900x556.png \
   --window-pos 200 120 \
-  --window-size 680 420 \
-  --icon-size 100 \
-  --icon "Lancer1911 ASR Live.app" 150 200 \
-  --icon "Lancer1911_ASR_Live_Guide_EN_ZH.pdf" 430 200 \
+  --window-size 900 605 \
+  --icon-size 120 \
+  --icon "Lancer1911 ASR Live.app" 213 299 \
+  --icon "Lancer1911_ASR_Live_Guide_EN_ZH.pdf" 450 451 \
   --hide-extension "Lancer1911 ASR Live.app" \
-  --app-drop-link 150 340 \
-  ASR-Live/dist/Lancer1911\ ASR\ Live.dmg \
-  ASR-Live/dist/dmg_src/
+  --app-drop-link 683 299 \
+  --disk-image-size 300 \
+  ~/Desktop/ASR_Live_DMG_src/"Lancer1911 ASR Live.dmg" \
+  ~/Desktop/ASR_Live_DMG_src/
 ```
 
-The finished `Lancer1911 ASR Live.dmg` will be placed in `ASR-Live/dist/`.
+The finished `Lancer1911 ASR Live.dmg` will be in `~/Desktop/ASR_Live_DMG_src/`.
 
 ---
 
