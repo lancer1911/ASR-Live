@@ -1,3 +1,5 @@
+> 🌐 [中文说明](README-ZH.md)
+
 # Lancer1911 ASR Live
 
 > Fully offline real-time multilingual speech recognition + LLM semantic correction + multilingual translation  
@@ -14,16 +16,16 @@
 
 ## ⚠️ Hardware Requirements
 
-Lancer1911 ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Qwen3 LLM — entirely on-device using Apple's MLX framework. **This is not optional software that degrades gracefully on lower-spec hardware.** Both models must fit in unified memory at the same time.
+Lancer1911 ASR Live runs up to three large AI models simultaneously — a Whisper ASR model, a Qwen3 LLM, and optionally a pyannote speaker embedding model — entirely on-device. **This is not optional software that degrades gracefully on lower-spec hardware.** All active models must fit in unified memory at the same time.
 
 | | Minimum | Recommended |
 |---|---|---|
 | **Chip** | Apple M1 | M2 Pro / M3 / M4 or later |
 | **Unified Memory** | **24 GB** | **48 GB** |
-| **Storage** | 15 GB free | 30 GB free |
+| **Storage** | 15 GB free | 30 GB free (+ 0.5 GB for speaker models) |
 | **macOS** | 13 Ventura | 14 Sonoma or later |
 
-> **Why 24 GB?** The default model pair (whisper-large-v3-turbo ≈ 3 GB + Qwen3-14B-4bit ≈ 8 GB) consumes roughly 11–13 GB for the models alone. macOS, the UI, and working buffers need the rest. On 16 GB machines the system will thrash or crash under load. If you only have 16 GB, use a smaller LLM such as Qwen3-8B-4bit and accept reduced translation quality.
+> **Why 24 GB?** The default configuration (whisper-large-v3-turbo ≈ 3 GB + Qwen3-14B-4bit ≈ 8 GB + pyannote speaker models ≈ 0.5 GB) consumes roughly 12–14 GB for the models alone. macOS, the UI, and working buffers need the rest. On 16 GB machines the system will thrash or crash under load. If you only have 16 GB, use a smaller LLM such as Qwen3-8B-4bit and accept reduced translation quality. The pyannote speaker model is optional and can be omitted to save memory.
 
 ---
 
@@ -31,7 +33,12 @@ Lancer1911 ASR Live runs two large AI models simultaneously — a Whisper ASR mo
 
 <p align="center">
   <img src="images/screenshot_main.png" alt="Main interface — live transcription with translations" width="800">
-  <br><em>Main interface — real-time transcription with multilingual translations</em>
+  <br><em>Main interface — real-time transcription with multilingual translations (Chinese UI)</em>
+</p>
+
+<p align="center">
+  <img src="images/screenshot_main_en.png" alt="Main interface — English UI" width="800">
+  <br><em>Main interface — English UI</em>
 </p>
 
 <p align="center">
