@@ -1,4 +1,4 @@
-# ASR Live
+# Lancer1911 ASR Live
 
 > Fully offline real-time multilingual speech recognition + LLM semantic correction + multilingual translation  
 > Built exclusively for Apple Silicon — requires an M-series Mac with 24 GB RAM or more
@@ -7,14 +7,14 @@
 ![RAM](https://img.shields.io/badge/RAM-24%20GB%20minimum-red)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python)
 ![MLX](https://img.shields.io/badge/MLX-0.31%2B-orange)
-![Version](https://img.shields.io/badge/version-4.0f-informational)
+![Version](https://img.shields.io/badge/version-4.3x-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
 ## ⚠️ Hardware Requirements
 
-ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Qwen3 LLM — entirely on-device using Apple's MLX framework. **This is not optional software that degrades gracefully on lower-spec hardware.** Both models must fit in unified memory at the same time.
+Lancer1911 ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Qwen3 LLM — entirely on-device using Apple's MLX framework. **This is not optional software that degrades gracefully on lower-spec hardware.** Both models must fit in unified memory at the same time.
 
 | | Minimum | Recommended |
 |---|---|---|
@@ -44,6 +44,11 @@ ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Q
   <br><em>Playback bar — replay recordings with transcript scrolling in sync</em>
 </p>
 
+<p align="center">
+  <img src="images/installation.png" alt="Installation in macOS" width="600">
+  <br><em>Installation in macOS</em>
+</p>
+
 ---
 
 ## Features
@@ -63,6 +68,7 @@ ASR Live runs two large AI models simultaneously — a Whisper ASR model and a Q
 - **Multi-format export** — TXT, SRT, JSON, and Markdown, with per-language filtering and a native macOS save panel.
 - **Built-in model downloader** — First-run wizard detects missing models and streams download progress directly in the UI.
 - **Hallucination filtering** — Whisper outputs with more than 50% repeated tokens are automatically discarded.
+- **Speaker diarization** — Automatically identifies up to 4 speakers using pyannote-audio voice embeddings. Each subtitle card is labelled with a colour-coded speaker badge. Speakers can be renamed and manually corrected. Speaker labels are included in all export formats.
 
 ---
 
@@ -106,7 +112,34 @@ hf download mlx-community/Qwen3-14B-4bit
 
 > Models are cached in `~/.cache/huggingface/hub/` and work offline once downloaded. You can also download them through the built-in guide after first launch.
 
-### 5. Launch
+### 5. Speaker Diarization Models (Optional)
+
+When installed, the app automatically identifies up to 4 speakers and labels each subtitle card.
+
+**Step 1 — Create a HuggingFace Read token**
+
+Go to [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) and create a token of type **Read** (not fine-grained).
+
+**Step 2 — Accept model agreements**
+
+While logged in, visit each page and click "Agree and access repository":
+
+- [pyannote/embedding](https://huggingface.co/pyannote/embedding)
+- [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+
+**Step 3 — Login and download**
+
+```bash
+source ~/asr-env/bin/activate
+pip install pyannote.audio torch omegaconf
+hf auth login   # paste your Read token when prompted
+hf download pyannote/embedding
+hf download pyannote/segmentation-3.0
+```
+
+After installation the app detects the models automatically at startup. The sidebar will show **Speaker ID: On** when active. Use **Settings → Check Speaker ID Setup** for an in-app guided walkthrough.
+
+### 6. Launch
 
 ```bash
 source ~/asr-env/bin/activate
@@ -137,7 +170,7 @@ python build_mac.py py2app
 
 # 4. Install
 open dist/
-# Drag "ASR Live.app" to /Applications
+# Drag "Lancer1911 ASR Live.app" to /Applications
 ```
 
 The `.app` bundle is approximately 15 MB and does not embed MLX, PyTorch, or any AI models. All large dependencies stay in `~/asr-env`.
@@ -145,7 +178,7 @@ The `.app` bundle is approximately 15 MB and does not embed MLX, PyTorch, or any
 **First-launch Gatekeeper warning:**
 
 ```bash
-xattr -cr "/Applications/ASR Live.app"
+xattr -cr "/Applications/Lancer1911 ASR Live.app"
 ```
 
 Or right-click → Open → click "Open" in the dialog.
@@ -162,28 +195,28 @@ rm -rf ASR-Live/dist/dmg_src
 mkdir -p ASR-Live/dist/dmg_src
 
 # Copy the built .app and the guide PDF into the staging folder
-cp -r ASR-Live/dist/ASR\ Live.app ASR-Live/dist/dmg_src/
-cp ASR-Live/ASR_Live_Guide_EN_ZH.pdf ASR-Live/dist/dmg_src/
+cp -r ASR-Live/dist/Lancer1911\ ASR\ Live.app ASR-Live/dist/dmg_src/
+cp ASR-Live/Lancer1911_ASR_Live_Guide_EN_ZH.pdf ASR-Live/dist/dmg_src/
 
 # Remove any leftover DMG from a previous run
-rm -f ASR-Live/dist/ASR\ Live.dmg
+rm -f ASR-Live/dist/Lancer1911\ ASR\ Live.dmg
 
 # Build the DMG
 create-dmg \
-  --volname "ASR Live" \
+  --volname "Lancer1911 ASR Live" \
   --volicon ASR-Live/dist/ASR\ Live.app/Contents/Resources/icon.icns \
   --window-pos 200 120 \
   --window-size 680 420 \
   --icon-size 100 \
-  --icon "ASR Live.app" 150 200 \
-  --icon "ASR_Live_Guide_EN_ZH.pdf" 430 200 \
-  --hide-extension "ASR Live.app" \
+  --icon "Lancer1911 ASR Live.app" 150 200 \
+  --icon "Lancer1911_ASR_Live_Guide_EN_ZH.pdf" 430 200 \
+  --hide-extension "Lancer1911 ASR Live.app" \
   --app-drop-link 150 340 \
-  ASR-Live/dist/ASR\ Live.dmg \
+  ASR-Live/dist/Lancer1911\ ASR\ Live.dmg \
   ASR-Live/dist/dmg_src/
 ```
 
-The finished `ASR Live.dmg` will be placed in `ASR-Live/dist/`.
+The finished `Lancer1911 ASR Live.dmg` will be placed in `ASR-Live/dist/`.
 
 ---
 
@@ -225,6 +258,17 @@ Select **Auto** to let Whisper detect the language on each sentence, or pin to *
 
 Choose which languages to display as translations. The language currently being spoken is automatically excluded from translation output to avoid duplication.
 
+### Speaker diarization
+
+Requires the optional pyannote models (see Quick Start §5). When active the sidebar shows a colour-coded list of detected speakers.
+
+| Parameter | Default | Range | Notes |
+|---|---|---|---|
+| Voice match threshold | 0.68 | 0.60–0.98 | Cosine similarity required to match an existing speaker. Lower = more lenient. |
+| New speaker confirm sentences | 2 | 1–4 | Frames accumulated before registering a new speaker. Higher = fewer false registrations. |
+
+Click a speaker badge on any subtitle card to reassign it to a different speaker. Click a speaker label in the sidebar to rename it — all cards update immediately.
+
 ### Audio input
 
 | Parameter | Default | Range | Notes |
@@ -261,6 +305,8 @@ Click **Export ▾** in the top bar, choose a language filter and format, then s
 | JSON | Full detail: timestamps, latency, raw ASR, corrected text, all translations |
 | Markdown | Suitable for Obsidian, Notion, or any Markdown-based tool |
 
+Speaker labels (names or default "发言人N") are included in all export formats — TXT, SRT, JSON, and Markdown.
+
 **Language filter options:** all languages mixed · corrected original only · raw ASR only · any single language (includes entries where that language appears as either the original or a translation).
 
 For long sessions, transcript history beyond the most recent 200 entries is streamed to a JSONL file in `~/Downloads` and automatically included in exports.
@@ -276,7 +322,7 @@ The first load takes 30–60 seconds while both models are read into unified mem
 `main.py` automatically kills any process holding port 17433 on launch. If the problem persists: `lsof -ti :17433 | xargs kill -9`
 
 **Microphone permission error: `PortAudioError -9986`.**  
-System Settings → Privacy & Security → Microphone → grant permission to Terminal or ASR Live.app.
+System Settings → Privacy & Security → Microphone → grant permission to Terminal or Lancer1911 ASR Live.app.
 
 **Repeated hallucinations like "nope nope nope…".**  
 The app filters these automatically. If they persist, raise VAD sensitivity to 0.6–0.7 and ensure the silence threshold is at least 0.5 s.
@@ -292,6 +338,9 @@ Confirm ffmpeg is installed (`brew install ffmpeg`) and that "Save recording" is
 
 **`No module named 'onnxruntime'`.**  
 `pip install onnxruntime`
+
+**Speaker ID shows "Not installed" in the sidebar.**  
+Follow Quick Start §5. If packages are installed but the model is missing, run `hf download pyannote/embedding && hf download pyannote/segmentation-3.0`. Use **Settings → Check Speaker ID Setup** for an in-app walkthrough.
 
 **Model downloads are slow or fail.**  
 Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
@@ -311,6 +360,8 @@ Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
 | [ffmpeg](https://ffmpeg.org) | MP3 encoding for recordings |
 | [Qwen3](https://huggingface.co/Qwen) | LLM for semantic correction and translation |
 | [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | Default ASR model |
+| [pyannote-audio](https://github.com/pyannote/pyannote-audio) | Speaker diarization via voice embeddings |
+| [PyTorch](https://pytorch.org) | Required by pyannote-audio |
 
 ---
 
