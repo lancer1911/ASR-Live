@@ -1,5 +1,5 @@
 """
-launcher.py — ASR Live .app 入口（纯标准库，无第三方依赖）
+launcher.py — Lancer1911 ASR Live .app 入口（纯标准库，无第三方依赖）
 找到 ~/asr-env 的 Python 3.x，用它运行 main.py
 """
 import os
@@ -52,13 +52,13 @@ def alert(title, msg):
 def main():
     python = find_python()
     if not python:
-        alert("ASR Live - Missing environment",
+        alert("Lancer1911 ASR Live - Missing environment",
               "Cannot find ~/asr-env.\nPlease complete the install steps in README.")
         sys.exit(1)
 
     main_py = find_main()
     if not main_py:
-        alert("ASR Live - File missing", "Cannot find main.py. Please reinstall.")
+        alert("Lancer1911 ASR Live - File missing", "Cannot find main.py. Please reinstall.")
         sys.exit(1)
 
     work_dir = str(Path(main_py).parent)
@@ -78,7 +78,7 @@ def main():
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_path, "a", encoding="utf-8") as log:
-        log.write(f"\n=== ASR Live launch ===\n")
+        log.write(f"\n=== Lancer1911 ASR Live launch ===\n")
         log.write(f"Python: {python}\n")
         log.write(f"main.py: {main_py}\n")
         proc = subprocess.run(

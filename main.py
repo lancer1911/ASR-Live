@@ -1,5 +1,5 @@
 """
-ASR Live v4.1f — 主入口
+Lancer1911 ASR Live v4.1f — 主入口
 用法：
   浏览器模式：python main.py          (在浏览器访问 http://localhost:17433)
   原生窗口：  python main.py --window
@@ -17,6 +17,7 @@ def _cleanup_old_processes():
     启动前清理旧进程：
     1. 杀掉占用端口的所有进程（含 uvicorn worker）
     2. 杀掉其他同名 asr_app/main.py 进程（防止僵尸残留）
+       修复 #8：使用包含完整路径的精确正则，避免误杀其他 Python 项目的 main.py。
     """
     import subprocess, os
 
@@ -38,10 +39,11 @@ def _cleanup_old_processes():
         pass
 
     # ── 2. 按进程名/命令行杀同名 Python 进程 ─────────────
-    # 匹配包含 "asr_app" 或 "main.py" 且运行 python 的进程
+    # 匹配包含 "asr_app" 目录路径 且 运行 main.py 的 python 进程，
+    # 避免误杀其他项目下的 main.py。
     try:
         result = subprocess.run(
-            ["pgrep", "-f", r"python.*main\.py"],
+            ["pgrep", "-f", r"python.*asr_app.*main\.py"],
             capture_output=True, text=True
         )
         for pid_str in result.stdout.strip().split():
@@ -87,7 +89,9 @@ def main():
     try:
         resp = _req.urlopen(f"http://127.0.0.1:{PORT}/api/check_models", timeout=3)
         models_status = _json.loads(resp.read())
-        missing = [(repo, info) for repo, info in models_status.items() if not info["cached"]]
+        # 只对必需模型（optional=False）检查缺失
+        missing = [(repo, info) for repo, info in models_status.items()
+                   if not info["cached"] and not info.get("optional", False)]
         if missing:
             print("\n" + "="*60)
             print("  ASR Live - First launch, models needed")
@@ -114,7 +118,7 @@ def main():
         import webview
 
         window = webview.create_window(
-            title="ASR Live",
+            title="Lancer1911 ASR Live",
             url=f"http://127.0.0.1:{PORT}",
             width=1300,
             height=840,

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASR Live v4.2j</title>
+<title>Lancer1911 ASR Live v4.4l</title>
 <script>
 /**
- * ASR Live – UI language strings
+ * Lancer1911 ASR Live – UI language strings
  * To add a new language: copy the `en` block, rename the key, translate every value.
  * Keys must stay identical across all languages.
  */
@@ -70,6 +70,19 @@ const I18N = {
     metLLM:             'LLM 时滞',
     metTotal:           '合计',
     metSent:            '句数',
+    spkLabel:           '发言人识别',
+    spkListTitle:       '发言人',
+    spkOn:              '开启',
+    spkOff:             '未开启',
+    sectSpeaker:        '发言人识别',
+    spkThreshLbl:       '声纹匹配阈值',
+    spkMinFramesLbl:    '新发言人确认句数',
+    spkCheckBtn:        '检查发言人识别功能',
+    spkDlgTitle:        '发言人识别未可用',
+    spkDlgStep1:        '第一步：生成 Read 类型 Token',
+    spkDlgStep2:        '第二步：同意模型协议（需登录网页）',
+    spkDlgStep3:        '第三步：登录并下载模型',
+    spkDlgOk:           '好的',
     metChar:            '字数',
     metRuntime:         '运行时长',
 
@@ -97,10 +110,18 @@ const I18N = {
     btnCancel:          '取消',
 
     sectASR:            'ASR 模型',
-    labelWhisper:       'Whisper 模型',
+    labelWhisper:       '选择ASR模型',
     whisperHint:        '大=准但慢',
     whisperCurrent:     '{name}（当前）',
     whisperNone:        '未找到本地 Whisper 模型',
+    labelASRBackend:    '选择ASR家族',
+    asrBackendWhisper:  'Whisper（默认，99种语言）',
+    asrBackendSV:       'SenseVoiceSmall（更快，支持情绪检测）',
+    asrBackendSVNoModel:'SenseVoiceSmall（未下载）',
+    asrBackendSVNoPkg:  'SenseVoiceSmall（需安装 mlx-audio）',
+    labelSenseVoice:    '选择ASR模型',
+    senseVoiceNone:     '未找到本地 SenseVoice 模型',
+    senseVoiceCurrent:  '{name}（当前）',
     labelLLM:           'LLM 矫正模型',
     llmHint:            '影响翻译质量',
     llmLoading:         '加载中…',
@@ -191,8 +212,9 @@ const I18N = {
     scanFailed:         '扫描失败',
 
     /* ── download guide ── */
-    dlTitle:            '欢迎使用 ASR Live',
+    dlTitle:            '欢迎使用 Lancer1911 ASR Live',
     dlSub:              '首次使用需要下载 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。',
+    dlSubOptional:      '（可选）',
     dlCached:           '✓ 已下载',
     dlWaiting:          '等待下载…',
     dlConnecting:       '连接中…',
@@ -204,6 +226,7 @@ const I18N = {
     dlStart:            '开始下载',
     dlStarting:         '下载中…',
     dlAllDone:          '全部完成，进入应用',
+    dlNoPkg:            '需先安装 mlx-audio：pip install mlx-audio',
 
     /* ── language display names (used in subtitle badges & translation rows) ── */
     langName: { zh:'中文', en:'英文', ja:'日文', ko:'韩文', fr:'法文', de:'德文', es:'西班牙文' },
@@ -270,6 +293,19 @@ const I18N = {
     metLLM:             'LLM Latency',
     metTotal:           'Total',
     metSent:            'Sentences',
+    spkLabel:           'Speaker ID',
+    spkListTitle:       'Speakers',
+    spkOn:              'On',
+    spkOff:             'Off',
+    sectSpeaker:        'Speaker ID',
+    spkThreshLbl:       'Voice Match Threshold',
+    spkMinFramesLbl:    'New Speaker Confirm Sentences',
+    spkCheckBtn:        'Check Speaker ID Setup',
+    spkDlgTitle:        'Speaker ID Unavailable',
+    spkDlgStep1:        'Step 1: Create a Read-type Token',
+    spkDlgStep2:        'Step 2: Accept model agreements (login required)',
+    spkDlgStep3:        'Step 3: Login and download models',
+    spkDlgOk:           'OK',
     metChar:            'Characters',
     metRuntime:         'Runtime',
 
@@ -294,10 +330,18 @@ const I18N = {
     btnCancel:          'Cancel',
 
     sectASR:            'ASR Model',
-    labelWhisper:       'Whisper Model',
+    labelWhisper:       'Choose ASR Model',
     whisperHint:        'larger = more accurate but slower',
     whisperCurrent:     '{name} (current)',
     whisperNone:        'No local Whisper model found',
+    labelASRBackend:    'Choose ASR Family',
+    asrBackendWhisper:  'Whisper (default, 99 languages)',
+    asrBackendSV:       'SenseVoiceSmall (faster, emotion detection)',
+    asrBackendSVNoModel:'SenseVoiceSmall (not downloaded)',
+    asrBackendSVNoPkg:  'SenseVoiceSmall (requires mlx-audio)',
+    labelSenseVoice:    'Choose ASR Model',
+    senseVoiceNone:     'No local SenseVoice model found',
+    senseVoiceCurrent:  '{name} (current)',
     labelLLM:           'LLM Correction Model',
     llmHint:            'affects translation quality',
     llmLoading:         'Loading…',
@@ -388,8 +432,9 @@ const I18N = {
     scanFailed:         'Scan failed',
 
     /* ── download guide ── */
-    dlTitle:            'Welcome to ASR Live',
+    dlTitle:            'Welcome to Lancer1911 ASR Live',
     dlSub:              'First-time setup requires downloading AI models (~11 GB). After that, everything runs fully offline.<br>Ensure network access and do not close the window during download.',
+    dlSubOptional:      '(optional)',
     dlCached:           '✓ Already downloaded',
     dlWaiting:          'Waiting…',
     dlConnecting:       'Connecting…',
@@ -401,6 +446,7 @@ const I18N = {
     dlStart:            'Start Download',
     dlStarting:         'Downloading…',
     dlAllDone:          'All done — enter app',
+    dlNoPkg:            'Install mlx-audio first: pip install mlx-audio',
 
     /* ── language display names ── */
     langName: { zh:'Chinese', en:'English', ja:'Japanese', ko:'Korean', fr:'French', de:'German', es:'Spanish' },
@@ -421,6 +467,7 @@ const I18N = {
   --tx-strong:#f0f4f8;
   --tt-zh:#d4a020;--tt-en:#48aae0;--tt-ja:#e86888;
   --cl-zh:#e8b84b;--cl-en:#5db8f0;--cl-ja:#f07898;--cl-ko:#80d4a0;--cl-fr:#c090e0;--cl-de:#f0a050;--cl-es:#f06060;
+  --spk0:#4ec9b0;--spk1:#c586c0;--spk2:#ce9178;--spk3:#9cdcfe;
   --r:7px;--fs:16px;
 }
 :root.light{
@@ -433,6 +480,7 @@ const I18N = {
   --tx-strong:#0d1420;
   --tt-zh:#7a5200;--tt-en:#005090;--tt-ja:#a02050;
   --cl-zh:#8a6000;--cl-en:#0060a0;--cl-ja:#b02050;--cl-ko:#006040;--cl-fr:#7040a0;--cl-de:#c06000;--cl-es:#c02020;
+  --spk0:#1a9980;--spk1:#8a3c8a;--spk2:#a05030;--spk3:#3060a0;
 }
 html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;font-size:var(--fs);background:var(--bg);color:var(--tx)}
 
@@ -455,23 +503,26 @@ html,body{height:100vh;overflow:hidden;font-family:-apple-system,'PingFang SC','
 .btn-danger:hover{background:rgba(224,80,80,.07)!important}
 /* ── confirm modal ── */
 .cfm-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:600}
-.cfm-box{width:360px;background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.cfm-box{width:360px;max-width:92vw;background:var(--bg2);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.cfm-box.wide{width:480px}
 .cfm-body{padding:22px 22px 16px;font-size:15px;color:var(--tx);line-height:1.6}
 .cfm-foot{padding:10px 16px 14px;display:flex;justify-content:flex-end;gap:8px}
 .cfm-btn{padding:6px 16px;border-radius:5px;font-size:14px;cursor:pointer;font-family:-apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;transition:all .12s}
-.cfm-primary{border:none;background:var(--ac);color:#081a14;font-weight:500}
-.cfm-primary:hover{opacity:.85}
+.cfm-primary{border:0.5px solid rgba(0,200,150,.5);background:rgba(0,200,150,.15);color:var(--ac);font-weight:500}
+.cfm-primary:hover{background:rgba(0,200,150,.25);border-color:var(--ac)}
 .cfm-ghost{border:0.5px solid var(--b2);background:none;color:var(--su)}
 .cfm-ghost:hover{border-color:var(--tx);color:var(--tx)}
-.cfm-danger{border:0.5px solid var(--red);background:none;color:var(--red)}
-.cfm-danger:hover{background:rgba(224,80,80,.09)}
+.cfm-danger{border:0.5px solid rgba(224,80,80,.5);background:rgba(224,80,80,.12);color:var(--red);font-weight:500}
+.cfm-danger:hover{background:rgba(224,80,80,.22);border-color:var(--red)}
 /* ── status banner (已保存 / 放弃保存) ── */
 .status-banner{position:fixed;top:56px;left:50%;transform:translateX(-50%);
   background:var(--bg2);border:0.5px solid var(--b2);border-radius:8px;
   padding:9px 22px;font-size:14px;color:var(--su);
   font-family:ui-monospace,'SF Mono',Menlo,monospace;
   box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:700;white-space:nowrap;
-  animation:sfadein .2s ease}
+  animation:sfadein .2s ease;transition:background .15s,border-color .15s,color .15s}
+.status-banner.saved{background:rgba(0,200,150,.12);border-color:rgba(0,200,150,.4);color:var(--ac)}
+.status-banner.discarded{background:rgba(224,80,80,.11);border-color:rgba(224,80,80,.35);color:var(--red)}
 @keyframes sfadein{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .lang-toggle{padding:5px 10px;border:0.5px solid var(--b2);border-radius:5px;background:none;color:var(--su);font-size:13px;font-family:ui-monospace,'SF Mono',Menlo,monospace;cursor:pointer;transition:all .12s;letter-spacing:.06em}
 .lang-toggle:hover{border-color:var(--ac);color:var(--ac)}
@@ -511,7 +562,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 
 /* ── center ── */
 .ctr{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.wave{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:2px;position:relative;flex-shrink:0}
+.wave{height:48px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 16px;gap:2px;position:relative;flex-shrink:0;overflow:hidden}
 .wc{width:2px;border-radius:1px;background:var(--ac);opacity:.55;transition:height .07s}
 .wtime{position:absolute;right:16px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;color:var(--su)}
 .sc{flex:1;overflow-y:auto;padding:16px 18px}
@@ -534,6 +585,42 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .badge.ja{background:rgba(240,120,152,.11);color:#b84d6a;border:0.5px solid rgba(240,120,152,.2)}
 .ets{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
 .elat{margin-left:auto;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;color:var(--hi)}
+.spk-badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:600;letter-spacing:.05em;padding:2px 8px;border-radius:3px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.spk-badge:hover{filter:brightness(1.2)}
+.spk-badge.spk0{color:var(--spk0);background:rgba(78,201,176,.12);border:0.5px solid rgba(78,201,176,.25)}
+.spk-badge.spk1{color:var(--spk1);background:rgba(197,134,192,.12);border:0.5px solid rgba(197,134,192,.25)}
+.spk-badge.spk2{color:var(--spk2);background:rgba(206,145,120,.12);border:0.5px solid rgba(206,145,120,.25)}
+.spk-badge.spk3{color:var(--spk3);background:rgba(156,220,254,.12);border:0.5px solid rgba(156,220,254,.25)}
+/* speaker rename inline popover */
+.spk-pop{position:absolute;top:38px;left:0;background:var(--bg3);border:0.5px solid var(--b2);border-radius:var(--r);padding:8px 10px;display:flex;gap:7px;align-items:center;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.spk-pop input{background:var(--bg4);border:0.5px solid var(--b2);border-radius:4px;color:var(--tx);font-size:13px;padding:4px 8px;width:120px;outline:none}
+.spk-pop input:focus{border-color:var(--ac)}
+.spk-pop button{background:var(--ac);border:none;border-radius:4px;color:#081a14;font-size:12px;font-weight:600;padding:4px 10px;cursor:pointer}
+/* sidebar speaker list */
+.spk-list{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.spk-list-item{display:flex;align-items:center;gap:7px;padding:3px 0}
+.spk-list-badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;font-weight:600;padding:2px 8px;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:filter .15s}
+.spk-list-badge:hover{filter:brightness(1.25)}
+.spk-list-badge.spk0{color:var(--spk0);background:rgba(78,201,176,.12);border:0.5px solid rgba(78,201,176,.25)}
+.spk-list-badge.spk1{color:var(--spk1);background:rgba(197,134,192,.12);border:0.5px solid rgba(197,134,192,.25)}
+.spk-list-badge.spk2{color:var(--spk2);background:rgba(206,145,120,.12);border:0.5px solid rgba(206,145,120,.25)}
+.spk-list-badge.spk3{color:var(--spk3);background:rgba(156,220,254,.12);border:0.5px solid rgba(156,220,254,.25)}
+/* speaker dropdown on card */
+.spk-drop{position:fixed;background:var(--bg3);border:0.5px solid var(--b2);border-radius:var(--r);padding:4px;z-index:800;box-shadow:0 4px 16px rgba(0,0,0,.35);min-width:120px;display:flex;flex-direction:column;gap:2px}
+.spk-drop-item{padding:5px 10px;border-radius:4px;font-size:12px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-weight:600;cursor:pointer;transition:background .1s;white-space:nowrap}
+.spk-drop-item:hover{background:var(--bg4)}
+.spk-drop-item.spk0{color:var(--spk0)}
+.spk-drop-item.spk1{color:var(--spk1)}
+.spk-drop-item.spk2{color:var(--spk2)}
+.spk-drop-item.spk3{color:var(--spk3)}
+.spk-drop-item.none{color:var(--hi)}
+/* speaker diarization status row in sidebar */
+.spk-status-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--b1)}
+.spk-status-pill{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.spk-status-pill.on{color:var(--ac);background:rgba(0,200,150,.12);border:0.5px solid rgba(0,200,150,.25)}
+.spk-status-pill.off{color:var(--hi);background:var(--bg3);border:0.5px solid var(--b2)}
+.spk-hint{font-size:12px;color:var(--hi);margin-top:5px;line-height:1.5;display:none}
+.spk-hint code{color:var(--su);background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px;display:block;margin-top:3px;word-break:break-all}
 .edit-btn{margin-left:6px;padding:1px 7px;font-size:12px;border-radius:3px;border:0.5px solid var(--b2);background:none;color:var(--hi);cursor:pointer;flex-shrink:0;line-height:1.6;transition:border-color .15s,color .15s}
 .edit-btn:hover{border-color:var(--ac);color:var(--ac)}
 .edit-btn.saving{border-color:var(--ac);color:var(--ac)}
@@ -656,8 +743,11 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 .dl-status{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;padding:4px 0;color:var(--hi);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dl-status.ok{color:var(--ac)}
 .dl-status.err{color:var(--red)}
-.dl-progress{height:3px;background:var(--b1);border-radius:2px;margin-top:8px;overflow:hidden;display:none}
+.dl-status-warn{font-size:13px;padding:4px 0;color:#f59e0b;min-height:18px}
+.dl-progress{display:none;align-items:center;gap:6px;margin-top:8px}
+.dl-progress-bar-wrap{flex:1;height:3px;background:var(--b1);border-radius:2px;overflow:hidden}
 .dl-progress-bar{height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s}
+.dl-pct{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--su);min-width:32px;text-align:right}
 .dl-cached{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ac);font-weight:500}
 .dl-foot{padding:16px 28px;border-top:0.5px solid var(--b1);display:flex;gap:10px;justify-content:flex-end}
 .dl-btn{padding:9px 20px;border-radius:6px;border:none;font-size:15px;cursor:pointer;font-family:-apple-system,'PingFang SC',sans-serif;font-weight:500}
@@ -674,7 +764,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 
 <!-- topbar -->
 <div class="top">
-  <div class="brand">ASR<em>/</em>LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.2j</span></div>
+  <div class="brand">LANCER1911<em>/</em>ASR LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.4l</span></div>
   <div class="tmid">
     <div class="dot" id="DOT"></div>
     <span class="tst" id="TST"></span>
@@ -745,6 +835,12 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       <div class="met"><span class="mn" id="M_TOT"></span><span class="mv g" id="MT">—</span></div>
       <div class="met"><span class="mn" id="M_SENT"></span><span class="mv" id="MC">0</span></div>
       <div class="met"><span class="mn" id="M_CHAR"></span><span class="mv" id="MCH">0</span></div>
+      <!-- speaker diarization status + list -->
+      <div class="spk-status-row" id="SPK_STATUS_ROW" style="margin-top:4px">
+        <span style="color:var(--su);font-size:13px;white-space:nowrap;flex-shrink:0;margin-right:8px" id="SPK_STATUS_LBL"></span>
+        <span class="spk-status-pill off" id="SPK_STATUS_PILL"></span>
+      </div>
+      <div class="spk-list" id="SPK_LIST" style="display:none"></div>
       <div class="met"><span class="mn" id="M_RUN"></span><span class="mv" id="MRT">—</span></div>
     </div>
   </div>
@@ -807,8 +903,21 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
       <div class="ssect" id="SP_SECT_ASR"></div>
 
       <div class="sf">
+        <div class="sfl" id="SP_ASR_BACKEND_LBL"></div>
+        <select id="S_ASR_BACKEND">
+          <option value="whisper"></option>
+          <option value="sensevoice"></option>
+        </select>
+      </div>
+
+      <div class="sf" id="SF_WHISPER" style="">
         <div class="sfl" id="SP_WHISPER_LBL"></div>
         <select id="SW"><option value=""></option></select>
+      </div>
+
+      <div class="sf" id="SF_SENSEVOICE" style="display:none">
+        <div class="sfl" id="SP_SENSEVOICE_LBL"></div>
+        <select id="SSV"><option value=""></option></select>
       </div>
 
       <div class="sf">
@@ -847,8 +956,8 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
         <div class="sfl" id="SP_SILENCE_LBL"></div>
         <div class="ssr">
           <input type="range" min="2" max="20" value="6" step="1" id="SSL"
-            oninput="this.nextElementSibling.textContent=(+this.value/10).toFixed(1)+'s'">
-          <span class="ssc">0.6s</span>
+            oninput="syncSettingsSlider('silence_s', +this.value/10, true)">
+          <span class="ssc" id="SSL_VAL">0.6s</span>
         </div>
       </div>
 
@@ -856,8 +965,8 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
         <div class="sfl" id="SP_VAD_LBL"></div>
         <div class="ssr">
           <input type="range" min="20" max="80" value="45" step="1" id="SVL"
-            oninput="this.nextElementSibling.textContent=(+this.value/100).toFixed(2)">
-          <span class="ssc">0.45</span>
+            oninput="syncSettingsSlider('vad_threshold', +this.value/100, true)">
+          <span class="ssc" id="SVL_VAL">0.45</span>
         </div>
       </div>
 
@@ -916,6 +1025,37 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
             onmouseover="this.style.borderColor='var(--ac)';this.style.color='var(--ac)'"
             onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--su)'">↻</button>
         </div>
+      </div>
+
+      <div class="ssect" id="SP_SECT_SPEAKER"></div>
+
+      <!-- speaker threshold slider -->
+      <div class="sf">
+        <div class="sfl" id="SP_SPK_THRESH_LBL"></div>
+        <div class="ssr">
+          <input type="range" min="60" max="98" value="68" step="1" id="SSPK"
+            oninput="this.nextElementSibling.textContent=(+this.value/100).toFixed(2)">
+          <span class="ssc">0.68</span>
+        </div>
+      </div>
+
+      <!-- min frames to register slider -->
+      <div class="sf">
+        <div class="sfl" id="SP_SPK_MINFRAMES_LBL"></div>
+        <div class="ssr">
+          <input type="range" min="1" max="4" value="2" step="1" id="SSPKF"
+            oninput="this.nextElementSibling.textContent=this.value">
+          <span class="ssc">2</span>
+        </div>
+      </div>
+
+      <!-- check speaker setup button -->
+      <div class="sf full">
+        <button id="SP_SPK_CHECK_BTN" onclick="checkSpeakerSetup()"
+          style="width:100%;padding:8px 12px;border-radius:var(--r);border:0.5px solid var(--b2);background:none;color:var(--su);font-size:13px;cursor:pointer;transition:all .15s;text-align:left"
+          onmouseover="this.style.borderColor='var(--ac)';this.style.color='var(--ac)'"
+          onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--su)'">
+        </button>
       </div>
 
       <div class="ssect" id="SP_SECT_UI"></div>
@@ -1013,6 +1153,12 @@ function applyUILang(){
   _el('M_SENT').textContent = t.metSent;
   _el('M_CHAR').textContent = t.metChar;
   _el('M_RUN').textContent  = t.metRuntime;
+  // refresh speaker status text when language switches
+  updateSpkStatus(_spkPackagesOk, _spkActive);
+  if(_el('SP_SECT_SPEAKER')) _el('SP_SECT_SPEAKER').textContent = t.sectSpeaker||'发言人识别';
+  if(_el('SP_SPK_THRESH_LBL')) _el('SP_SPK_THRESH_LBL').textContent = t.spkThreshLbl||'声纹匹配阈值';
+  if(_el('SP_SPK_MINFRAMES_LBL')) _el('SP_SPK_MINFRAMES_LBL').textContent = t.spkMinFramesLbl||'新发言人确认句数';
+  if(_el('SP_SPK_CHECK_BTN')) _el('SP_SPK_CHECK_BTN').textContent = '⚙ '+(t.spkCheckBtn||'检查发言人识别功能');
 
   // sidebar language tags
   _el('TAG_AUTO').textContent = t.langAuto || '自动';
@@ -1043,7 +1189,9 @@ function applyUILang(){
   _el('SP_CANCEL').textContent      = t.btnCancel;
   _el('SP_SAVE').textContent        = t.btnSave;
   _el('SP_SECT_ASR').textContent    = t.sectASR;
+  _el('SP_ASR_BACKEND_LBL').innerHTML = t.labelASRBackend;
   _el('SP_WHISPER_LBL').innerHTML   = t.labelWhisper + `<small>${t.whisperHint}</small>`;
+  _el('SP_SENSEVOICE_LBL').innerHTML = t.labelSenseVoice;
   _el('SP_LLM_LBL').innerHTML       = t.labelLLM + `<small>${t.llmHint}</small>`;
   _el('SP_SECT_SCENE').textContent  = t.sectScene;
   _el('SP_CONTEXT_LBL').innerHTML   = t.labelContext + `<small>${t.contextHint}</small>`;
@@ -1098,18 +1246,6 @@ function applyUILang(){
   const tst = _el('TST');
   if(tst && (recState==='idle'||recState==='ready')) tst.textContent = t.statusReady;
   if(tst && recState==='idle' && tst.textContent==='') tst.textContent = t.statusConnecting;
-
-  // 更新已有字幕卡片上的编辑/保存/翻译按钮文字
-  document.querySelectorAll('.ent .edit-btn').forEach(btn => {
-    btn.textContent = t.btnEditOrig;
-    btn.title       = t.titleEditOrig;
-  });
-  document.querySelectorAll('.ent .edit-btn-save').forEach(btn => {
-    btn.textContent = t.btnSaveOrig;
-  });
-  document.querySelectorAll('.ent .edit-btn-translate').forEach(btn => {
-    btn.textContent = t.btnTranslateOrig;
-  });
 }
 
 // ── ASR 识别语言锁定 ──────────────────────────────────────────
@@ -1207,10 +1343,18 @@ function handle(m){
     applySettings(m.settings||{});
     applyAsrLangUI((m.settings||{}).asr_language || null);
     if(m.recording) setRec(true);
+    // Restore speaker names from server
+    Object.entries(m.speaker_names||{}).forEach(([id,name])=>{ _speakerNames[+id]=name; });
+    updateSpkStatus(m.speaker_packages_ok, m.speaker_active);
     (m.history||[]).forEach(addEntry);
   }
   else if(m.type==='status'){
     TST.textContent = m.text;
+    if(!m.ready){
+      _modelReady = false;
+      DOT.classList.remove('on');
+      _applyRecUI();
+    }
     if(m.ready){
       DOT.classList.add('on');
       _modelReady = true;
@@ -1218,12 +1362,45 @@ function handle(m){
     }
   }
   else if(m.type==='recording') setRec(m.value, m);
+  else if(m.type==='audio_level'){ if(waveOn) pushRms(m.rms); }
+  else if(m.type==='speaker_status'){
+    updateSpkStatus(m.available, m.active, m.error);
+  }
+  else if(m.type==='speaker_id_updated'){
+    // Another client corrected a speaker — sync our DOM
+    const card = document.querySelector(`.ent[data-id="${m.entry_id}"]`);
+    if(card && m.speaker_id != null){
+      card.dataset.spkId = m.speaker_id;
+      const badge = card.querySelector('.spk-badge');
+      if(badge){
+        badge.className = `spk-badge ${spkClass(m.speaker_id)}`;
+        badge.dataset.spk = m.speaker_id;
+        badge.textContent = spkLabel(m.speaker_id);
+        badge.onclick = (e) => openSpkDrop(e, m.speaker_id, m.entry_id);
+      }
+    }
+    renderSpkList();
+  }
+  else if(m.type==='speaker_names_loaded'){
+    Object.entries(m.names||{}).forEach(([id,name])=>{ _speakerNames[+id]=name; });
+    renderSpkList();
+  }
+  else if(m.type==='speaker_renamed'){
+    _speakerNames[m.speaker_id] = m.name;
+    document.querySelectorAll(`.spk-badge[data-spk="${m.speaker_id}"]`).forEach(el=>{
+      el.textContent = spkLabel(m.speaker_id);
+    });
+    renderSpkList();
+  }
   else if(m.type==='asr_partial') showLive(m.raw, m.lang, m.asr_ms);
   else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms, m.llm_ms); }
   else if(m.type==='entry_updated'){ applyEntryUpdate(m); }
   else if(m.type==='cleared'){
     SC.innerHTML = `<div class="empty" id="HINT">${T('emptyHint')}</div>`;
     sentCnt=0; charCnt=0; MC.textContent='0'; MCH.textContent='0';
+    // Reset speaker names
+    Object.keys(_speakerNames).forEach(k=>delete _speakerNames[k]);
+    renderSpkList();
     if(_audio){ _audio.pause(); _audio=null; }
     _activeEntry=null; _entryTimes=[];
     _recStartWallMs = null;   // 加载会话时清除旧录音基准，避免 fallback 偏移算错
@@ -1337,10 +1514,14 @@ function _applyRecUI(){
     btn.style.pointerEvents = busy ? 'none' : '';
   });
 
-  const wn = (G.settings&&G.settings.whisper_repo||'whisper').split('/').pop();
+  // ASR 引擎显示名：whisper 显示模型名，sensevoice 显示 "SenseVoice"
+  const backend=(G.settings&&G.settings.asr_backend)||'whisper';
+  const asrLabel = backend==='sensevoice'
+    ? ((G.settings&&G.settings.sensevoice_repo||'SenseVoiceSmall').split('/').pop())
+    : ((G.settings&&G.settings.whisper_repo||'whisper').split('/').pop());
   const ln = (G.settings&&G.settings.llm_repo||'llm').split('/').pop();
   _el('TST').textContent = isRec
-    ? T('statusRecording').replace('{whisper}',wn).replace('{llm}',ln)
+    ? T('statusRecording').replace('{whisper}',asrLabel).replace('{llm}',ln)
     : isPaus ? T('statusPaused') : T('statusReady');
 
   if(isRec && recState!=='paused'){
@@ -1370,10 +1551,11 @@ function _markSaved()  { _unsaved = false; }
 
 // ── 状态横幅（已保存 / 放弃保存）────────────────────────────
 let _bannerTimer;
-function showBanner(msg){
+function showBanner(msg, type=''){
   let b = _el('STATUS_BANNER');
   if(!b){ b=document.createElement('div'); b.id='STATUS_BANNER'; b.className='status-banner'; document.body.appendChild(b); }
   b.textContent = msg;
+  b.className = 'status-banner' + (type ? ' '+type : '');
   b.style.display = '';
   clearTimeout(_bannerTimer);
   _bannerTimer = setTimeout(()=>{ b.style.display='none'; }, 2000);
@@ -1381,14 +1563,14 @@ function showBanner(msg){
 
 // ── 自定义 confirm modal ─────────────────────────────────────
 // buttons: [{label, cls, value}, ...]  → returns Promise<value>
-function showModal(title, body, buttons){
+function showModal(title, body, buttons, extraCls=''){
   return new Promise(resolve => {
     const ov = document.createElement('div');
     ov.className = 'cfm-ov';
     const btnsHtml = buttons.map((b,i)=>
       `<button class="cfm-btn ${b.cls}" data-idx="${i}">${b.label}</button>`
     ).join('');
-    ov.innerHTML = `<div class="cfm-box">
+    ov.innerHTML = `<div class="cfm-box ${extraCls}">
       <div class="cfm-body"><strong style="display:block;margin-bottom:6px;font-size:15px;color:var(--tx)">${title}</strong>${body}</div>
       <div class="cfm-foot">${btnsHtml}</div>
     </div>`;
@@ -1422,12 +1604,12 @@ async function checkUnsaved(){
       function h(){ clearTimeout(tid); window.removeEventListener('_save_done', h); res(); }
       window.addEventListener('_save_done', h, {once:true});
     });
-    showBanner(T('bannerSaved'));
+    showBanner(T('bannerSaved'), 'saved');
     _markSaved();
     await new Promise(r=>setTimeout(r,2000));
     return 'saved';
   } else if(choice === 'discard'){
-    showBanner(T('bannerDiscarded'));
+    showBanner(T('bannerDiscarded'), 'discarded');
     await new Promise(r=>setTimeout(r,2000));
     return 'discard';
   }
@@ -1675,18 +1857,288 @@ function playerSeek(val){
   _audio.currentTime=(_audio.duration||0)*val/100;
 }
 
+// ── Speaker Management ───────────────────────────────────────
+// speaker_id (0-indexed int) → user-defined name
+const _speakerNames = {};  // { 0: "张三", 1: "李四", ... }
+const SPK_COLORS = ['spk0','spk1','spk2','spk3'];
+const SPK_DEFAULTS_ZH = ['发言人1','发言人2','发言人3','发言人4'];
+
+function spkLabel(id){
+  if(id == null) return null;
+  return _speakerNames[id] || SPK_DEFAULTS_ZH[id] || `发言人${id+1}`;
+}
+
+function spkClass(id){
+  return id != null ? SPK_COLORS[id % 4] : '';
+}
+
+// Speaker setup state (updated from server)
+let _spkPackagesOk = false;
+let _spkActive     = false;
+
+// Update sidebar speaker diarization status — simple on/off pill
+function updateSpkStatus(packagesOk, active, error){
+  _spkPackagesOk = !!packagesOk;
+  _spkActive     = !!active;
+  const lbl  = _el('SPK_STATUS_LBL');
+  const pill = _el('SPK_STATUS_PILL');
+  if(!lbl || !pill) return;
+  lbl.textContent = T('spkLabel');
+  if(active){
+    pill.textContent = '✓ ' + T('spkOn');
+    pill.className   = 'spk-status-pill on';
+  } else {
+    pill.textContent = T('spkOff');
+    pill.className   = 'spk-status-pill off';
+  }
+}
+
+// ── Sidebar speaker list ──────────────────────────────────────
+// Rebuild the sidebar list showing all known speakers
+function renderSpkList(){
+  const list = _el('SPK_LIST');
+  if(!list) return;
+  // Determine how many speakers are registered (find max speaker_id in history)
+  const ids = new Set();
+  document.querySelectorAll('.ent[data-spk-id]').forEach(el=>{
+    const id = parseInt(el.dataset.spkId);
+    if(!isNaN(id)) ids.add(id);
+  });
+  // Also include any named speakers
+  Object.keys(_speakerNames).forEach(k=>ids.add(parseInt(k)));
+
+  if(ids.size === 0){ list.style.display='none'; return; }
+  list.style.display='flex';
+  list.innerHTML = '';
+  [...ids].sort((a,b)=>a-b).forEach(id=>{
+    const item = document.createElement('div');
+    item.className = 'spk-list-item';
+    const badge = document.createElement('span');
+    badge.className = `spk-list-badge ${spkClass(id)}`;
+    badge.textContent = spkLabel(id);
+    badge.dataset.spk = id;
+    badge.onclick = (e) => openSpkRename(e, id);
+    item.appendChild(badge);
+    list.appendChild(item);
+  });
+}
+
+// "检查发言人识别功能" button handler
+function checkSpeakerSetup(){
+  if(_spkActive){
+    showModal(
+      T('spkLabel'),
+      `<div style="color:var(--ac);font-size:14px">✓ ${T('spkOn')}</div>`,
+      [{label: T('spkDlgOk'), cls:'cfm-primary', value:'ok'}]
+    );
+    return;
+  }
+  // Build guidance dialog
+  const body = `
+    <div style="font-size:13px;color:var(--su);line-height:1.8">
+      ${!_spkPackagesOk ? `<div style="margin-bottom:10px;color:var(--red)">⚠ 缺少依赖：请先安装<br>
+        <code style="display:block;background:var(--bg3);padding:4px 8px;border-radius:4px;margin-top:4px;font-size:12px">pip install pyannote.audio torch omegaconf</code>
+      </div>` : ''}
+      <div style="font-weight:600;color:var(--tx);margin-bottom:4px">${T('spkDlgStep1')}</div>
+      <div style="margin-bottom:2px">前往 <a href="https://huggingface.co/settings/tokens" target="_blank" style="color:var(--ac)">huggingface.co/settings/tokens</a></div>
+      <div style="margin-bottom:10px">选择类型 <strong>Read</strong>（不是 fine-grained）</div>
+
+      <div style="font-weight:600;color:var(--tx);margin-bottom:4px">${T('spkDlgStep2')}</div>
+      <div style="margin-bottom:2px">• <a href="https://huggingface.co/pyannote/embedding" target="_blank" style="color:var(--ac)">pyannote/embedding</a> → Agree and access</div>
+      <div style="margin-bottom:10px">• <a href="https://huggingface.co/pyannote/segmentation-3.0" target="_blank" style="color:var(--ac)">pyannote/segmentation-3.0</a> → Agree and access</div>
+
+      <div style="font-weight:600;color:var(--tx);margin-bottom:4px">${T('spkDlgStep3')}</div>
+      <code style="display:block;background:var(--bg3);padding:4px 8px;border-radius:4px;font-size:12px;margin-bottom:4px">hf auth login</code>
+      <code style="display:block;background:var(--bg3);padding:4px 8px;border-radius:4px;font-size:12px;margin-bottom:4px">hf download pyannote/embedding</code>
+      <code style="display:block;background:var(--bg3);padding:4px 8px;border-radius:4px;font-size:12px">hf download pyannote/segmentation-3.0</code>
+    </div>`;
+  showModal(T('spkDlgTitle'), body, [{label: T('spkDlgOk'), cls:'cfm-primary', value:'ok'}], 'wide');
+}
+
+// Build speaker badge HTML (clickable → speaker dropdown for manual correction)
+function spkBadgeHtml(id, entryId){
+  if(id == null) return '';
+  const label = escHtml(spkLabel(id));
+  const cls   = spkClass(id);
+  return `<span class="spk-badge ${cls}" data-spk="${id}" data-entry="${entryId}" onclick="openSpkDrop(event,${id},'${entryId}')">${label}</span>`;
+}
+
+// Speaker dropdown on card badge — shows all known speakers + "无" option
+let _spkDropEl = null;
+function closeSpkDrop(){ if(_spkDropEl){_spkDropEl.remove();_spkDropEl=null;} }
+
+function openSpkDrop(evt, currentId, entryId){
+  evt.stopPropagation();
+  closeSpkDrop();
+  closeSpkRename();
+  const badge = evt.currentTarget;
+  const drop = document.createElement('div');
+  drop.className = 'spk-drop';
+
+  // Collect all known speaker ids
+  const ids = new Set();
+  document.querySelectorAll('.ent[data-spk-id]').forEach(el=>{
+    const id = parseInt(el.dataset.spkId);
+    if(!isNaN(id)) ids.add(id);
+  });
+  Object.keys(_speakerNames).forEach(k=>ids.add(parseInt(k)));
+
+  [...ids].sort((a,b)=>a-b).forEach(id=>{
+    const item = document.createElement('div');
+    item.className = `spk-drop-item ${spkClass(id)}${id===currentId?' selected':''}`;
+    item.textContent = (id===currentId ? '✓ ' : '　') + spkLabel(id);
+    item.onclick = (e) => {
+      e.stopPropagation();
+      closeSpkDrop();
+      if(id !== currentId) applySpkCorrection(entryId, id);
+    };
+    drop.appendChild(item);
+  });
+
+  // Position relative to badge, appended to body to escape overflow clipping
+  const rect = badge.getBoundingClientRect();
+  drop.style.top  = (rect.bottom + 4) + 'px';
+  drop.style.left = rect.left + 'px';
+  document.body.appendChild(drop);
+  _spkDropEl = drop;
+  setTimeout(()=>document.addEventListener('click', closeSpkDrop, {once:true}), 0);
+}
+
+function applySpkCorrection(entryId, newSpkId){
+  // Update DOM
+  const card = document.querySelector(`.ent[data-id="${entryId}"]`);
+  if(card){
+    card.dataset.spkId = newSpkId;
+    const badge = card.querySelector('.spk-badge');
+    if(badge){
+      badge.className = `spk-badge ${spkClass(newSpkId)}`;
+      badge.dataset.spk = newSpkId;
+      badge.dataset.entry = entryId;
+      badge.textContent = spkLabel(newSpkId);
+      badge.onclick = (e) => openSpkDrop(e, newSpkId, entryId);
+    }
+  }
+  renderSpkList();
+  // Tell server
+  send({action:'update_speaker_id', entry_id: entryId, speaker_id: newSpkId});
+  _markUnsaved();
+}
+
+// Rename popover (one at a time)
+let _spkPopEl = null;
+function openSpkRename(evt, id){
+  evt.stopPropagation();
+  closeSpkRename();
+  const badge = evt.currentTarget;
+  const pop   = document.createElement('div');
+  pop.className = 'spk-pop';
+  const cur   = _speakerNames[id] || '';
+  pop.innerHTML = `<input id="SPK_INP" maxlength="20" placeholder="${SPK_DEFAULTS_ZH[id]||'发言人'+(id+1)}" value="${escHtml(cur)}"><button onclick="commitSpkRename(${id})">确定</button>`;
+  badge.style.position = 'relative';
+  badge.appendChild(pop);
+  _spkPopEl = pop;
+  const inp = document.getElementById('SPK_INP');
+  inp.focus(); inp.select();
+  inp.onkeydown = e => { if(e.key==='Enter') commitSpkRename(id); if(e.key==='Escape') closeSpkRename(); e.stopPropagation(); };
+  setTimeout(()=>{ document.addEventListener('click', closeSpkRename, {once:true}); }, 0);
+}
+
+function closeSpkRename(){
+  if(_spkPopEl){ _spkPopEl.remove(); _spkPopEl = null; }
+}
+
+function commitSpkRename(id){
+  const inp = document.getElementById('SPK_INP');
+  if(!inp) return;
+  const name = inp.value.trim();
+  closeSpkRename();
+  _speakerNames[id] = name;
+  // Update all card badges and sidebar list
+  document.querySelectorAll(`.spk-badge[data-spk="${id}"]`).forEach(el=>{
+    el.textContent = spkLabel(id);
+  });
+  renderSpkList();
+  // Tell server
+  send({action:'rename_speaker', speaker_id:id, name});
+}
+
 // ── Waveform ──────────────────────────────────────────────
 const WB=_el('WB');
 const wcs=[];
-for(let i=0;i<76;i++){const d=document.createElement('div');d.className='wc';d.style.height='3px';WB.insertBefore(d,WB.lastElementChild);wcs.push(d);}
+
+// 动态计算条数：填满波形区域直到时间数字左侧
+// 时间数字宽约 72px + 右边距 16px + 间隙 8px = 96px 保留
+// 条宽 2px + 间距 2px = 4px/条；左边距 16px
+function calcBarCount(){
+  const available = WB.offsetWidth - 96 - 16;  // 减去右侧时间区和左边距
+  return Math.max(60, Math.floor(available / 4));
+}
+
+let BAR_COUNT = calcBarCount();
+
+function buildBars(n){
+  wcs.length = 0;
+  // 清除旧条（保留 wtime span）
+  Array.from(WB.children).forEach(el=>{ if(!el.classList.contains('wtime')) el.remove(); });
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='wc';d.style.height='3px';
+    WB.insertBefore(d, WB.querySelector('.wtime'));
+    wcs.push(d);
+  }
+}
+buildBars(BAR_COUNT);
+
+// 窗口 resize 时重建条（重置缓冲）
+window.addEventListener('resize', ()=>{
+  const n = calcBarCount();
+  if(n !== BAR_COUNT){
+    BAR_COUNT = n;
+    rmsHistory.fill(0); rmsHead = 0;
+    buildBars(BAR_COUNT);
+  }
+});
+
 let waveOn=false;
-function waveLoop(){
-  if(!waveOn){wcs.forEach(c=>c.style.height='3px');return;}
-  wcs.forEach((c,i)=>{
-    const h=2+Math.random()*30*(0.3+0.7*Math.abs(Math.sin(Date.now()/500+i*.33)));
-    c.style.height=h+'px';
+
+// 真实麦克风音量驱动波形
+const RMS_BUF_LEN = 300;                          // 固定大缓冲，按需取最后 BAR_COUNT 帧
+const rmsHistory = new Float32Array(RMS_BUF_LEN); // 滚动缓冲
+let rmsHead = 0;
+
+// 静音阈值：RMS 低于此值视为无声，显示直线
+const SILENCE_THRESHOLD = 0.012;
+
+function pushRms(rms){
+  rmsHistory[rmsHead] = rms;
+  rmsHead = (rmsHead + 1) % RMS_BUF_LEN;
+  if(waveOn) renderWave();
+}
+
+function renderWave(){
+  const MAX_H = 40, MIN_H = 3;
+  const n = wcs.length;
+  wcs.forEach((c, i) => {
+    // 从缓冲末尾取最近 n 帧（最右是最新）
+    const offset = n - 1 - i;  // i=0→最旧，i=n-1→最新
+    const idx = (rmsHead - 1 - offset + RMS_BUF_LEN) % RMS_BUF_LEN;
+    const rms = rmsHistory[idx];
+
+    // 低于阈值：显示直线
+    if(rms < SILENCE_THRESHOLD){
+      c.style.height = MIN_H + 'px';
+      return;
+    }
+    // 对数映射 + 开方增强小信号可见性
+    const norm = Math.min(1, rms * 5);
+    const shaped = Math.pow(norm, 0.55);
+    const h = MIN_H + (MAX_H - MIN_H) * shaped;
+    c.style.height = h + 'px';
   });
-  setTimeout(waveLoop,65);
+}
+
+function waveLoop(){
+  if(!waveOn){ wcs.forEach(c=>c.style.height='3px'); return; }
 }
 
 // ── Subtitle entries ──────────────────────────────────────
@@ -1725,9 +2177,12 @@ function addEntry(e){
     return `<div class="trow"><span class="tlbl" style="color:${col}">${label}</span><span class="tt" data-plain="${safeQ}" style="color:${col};opacity:.85">${escHtml(tx)}</span></div>`;
   }).join('');
 
+  if(e.speaker_id != null) div.dataset.spkId = e.speaker_id;
+  const spkHtml = e.speaker_id != null ? spkBadgeHtml(e.speaker_id, e.id) : '';
   div.innerHTML=`
-    <div class="eHead">
+    <div class="eHead" style="position:relative">
       <span class="badge ${cls}">${TL(cls)}</span>
+      ${spkHtml}
       <span class="ets">${e.timestamp}</span>
       <span class="elat">ASR ${e.asr_ms}ms · LLM ${e.llm_ms}ms</span>
       <button class="edit-btn" title="${T('titleEditOrig')}" onclick="toggleEditOrig(event,'${e.id}')">${T('btnEditOrig')}</button>
@@ -1736,6 +2191,7 @@ function addEntry(e){
     ${transHtml?`<div class="tblock">${transHtml}</div>`:''}
   `;
   SC.appendChild(div);
+  renderSpkList();
   sentCnt++; charCnt+=(e.corrected||'').length;
   _markUnsaved();
   MC.textContent=sentCnt; MCH.textContent=charCnt;
@@ -1880,17 +2336,31 @@ function queueSettings(patch){
   clearTimeout(settingsTi);
   settingsTi=setTimeout(()=>send({action:'update_settings',settings:patch}),500);
 }
+function setSliderValue(sliderId, valueId, rawValue, scale, formatter){
+  const sl = _el(sliderId);
+  if(sl) sl.value = Math.round(rawValue * scale);
+  const out = _el(valueId);
+  if(out) out.textContent = formatter(rawValue);
+}
+function syncSettingsSlider(key, value, live=false){
+  if(key === 'silence_s'){
+    setSliderValue('SSL', 'SSL_VAL', value, 10, v => v.toFixed(1)+'s');
+    setSliderValue('SLIDER_SILENCE', 'SV', value, 10, v => v.toFixed(1)+'s');
+  } else if(key === 'vad_threshold'){
+    setSliderValue('SVL', 'SVL_VAL', value, 100, v => v.toFixed(2));
+    setSliderValue('SLIDER_VAD', 'VV', value, 100, v => v.toFixed(2));
+  }
+  if(live) queueSettings({[key]: value});
+}
 function applySettings(s){
   if(s.font_size) document.documentElement.style.setProperty('--fs',s.font_size+'px');
   if(s.auto_scroll!==undefined) autoScroll=!!s.auto_scroll;
-  // 同步 sidebar 快速调节滑块
+  // 同步 sidebar 和设置面板中的同源滑块
   if(s.silence_s!==undefined){
-    const sl=_el('SLIDER_SILENCE'); if(sl){ sl.value=Math.round(s.silence_s*10); }
-    const sv=_el('SV'); if(sv) sv.textContent=s.silence_s.toFixed(1)+'s';
+    syncSettingsSlider('silence_s', s.silence_s);
   }
   if(s.vad_threshold!==undefined){
-    const sl=_el('SLIDER_VAD'); if(sl){ sl.value=Math.round(s.vad_threshold*100); }
-    const vv=_el('VV'); if(vv) vv.textContent=s.vad_threshold.toFixed(2);
+    syncSettingsSlider('vad_threshold', s.vad_threshold);
   }
   if(s.mic_gain!==undefined){
     const sl=_el('SLIDER_GAIN'); if(sl){ sl.value=Math.round(s.mic_gain*10); }
@@ -1915,23 +2385,70 @@ async function openSettings(){
     }
     if(sbit) sbit.value=cur.mp3_bitrate||'192';
 
+    // ASR backend selector
+    const sBackend=_el('S_ASR_BACKEND');
+    const curBackend=cur.asr_backend||'whisper';
+    const svCached=!!(data.sensevoice&&data.sensevoice.length);
+    // Retrieve mlx_audio status from check_models (cached in G._checkModels)
+    const mlxAudioOk=G._mlxAudioOk!==false; // default true (assume installed)
+    sBackend.innerHTML=`<option value="whisper"${curBackend==='whisper'?' selected':''}>${T('asrBackendWhisper')}</option>`
+      +(mlxAudioOk
+        ? `<option value="sensevoice"${curBackend==='sensevoice'?' selected':''}>${svCached?T('asrBackendSV'):T('asrBackendSVNoModel')}</option>`
+        : `<option value="sensevoice" disabled>${T('asrBackendSVNoPkg')}</option>`);
+
+    // Show/hide Whisper vs SenseVoice model rows
+    function _refreshBackendRows(){
+      const b=sBackend.value;
+      const sfW=_el('SF_WHISPER'), sfS=_el('SF_SENSEVOICE');
+      if(sfW) sfW.style.display=(b==='whisper')?'':'none';
+      if(sfS) sfS.style.display=(b==='sensevoice')?'':'none';
+    }
+    sBackend.onchange=_refreshBackendRows;
+    _refreshBackendRows();
+
     // Whisper dropdown
-    _el('SW').innerHTML=data.whisper.length
-      ? data.whisper.map(r=>{
+    const whisperModels = [...new Set(data.whisper || [])]
+      .sort((a,b)=>(a.toLowerCase().includes('turbo')?0:1)-(b.toLowerCase().includes('turbo')?0:1) || a.localeCompare(b));
+    _el('SW').innerHTML=whisperModels.length
+      ? whisperModels.map(r=>{
           const name=r.split('/')[1], isCur=r===(cur.whisper_repo||'');
           const label=isCur?T('whisperCurrent').replace('{name}',name):name;
           return `<option value="${r}"${isCur?' selected':''}>${label}</option>`;
         }).join('')
       : `<option value="">${T('whisperNone')}</option>`;
 
+    // SenseVoice dropdown
+    _el('SSV').innerHTML=(data.sensevoice&&data.sensevoice.length)
+      ? data.sensevoice.map(r=>{
+          const name=r.split('/')[1], isCur=r===(cur.sensevoice_repo||'');
+          const label=isCur?T('senseVoiceCurrent').replace('{name}',name):name;
+          return `<option value="${r}"${isCur?' selected':''}>${label}</option>`;
+        }).join('')
+      : `<option value="">${T('senseVoiceNone')}</option>`;
+
     // LLM dropdown
-    _el('SL').innerHTML=data.llm.length
-      ? data.llm.map(r=>{
+    const llmModels = [...new Set(data.llm || [])]
+      .sort((a,b)=>(a.includes('30B')?0:1)-(b.includes('30B')?0:1) || a.localeCompare(b));
+    _el('SL').innerHTML=llmModels.length
+      ? llmModels.map(r=>{
           const name=r.split('/')[1], isCur=r===(cur.llm_repo||'');
           const label=isCur?T('llmCurrent').replace('{name}',name):name;
           return `<option value="${r}"${isCur?' selected':''}>${label}</option>`;
         }).join('')
       : `<option value="">${T('llmNone')}</option>`;
+
+    // Speaker threshold slider
+    const sspk = _el('SSPK');
+    if(sspk){
+      const thr = (cur.spk_threshold !== undefined) ? cur.spk_threshold : 0.70;
+      sspk.value = Math.round(thr * 100);
+      sspk.nextElementSibling.textContent = thr.toFixed(2);
+    }
+    const sspkf = _el('SSPKF');
+    if(sspkf){
+      sspkf.value = cur.spk_min_frames !== undefined ? cur.spk_min_frames : 2;
+      sspkf.nextElementSibling.textContent = sspkf.value;
+    }
 
     // Microphone
     try {
@@ -1957,7 +2474,9 @@ function saveSettings(){
     : t.textContent);
   const devVal=_el('SDS').value===''?null:parseInt(_el('SDS').value);
   const settings={
-    whisper_repo:  _el('SW').value,
+    whisper_repo:    _el('SW').value,
+    sensevoice_repo: _el('SSV')?.value||'',
+    asr_backend:     _el('S_ASR_BACKEND')?.value||'whisper',
     llm_repo:      _el('SL').value,
     input_device:  devVal,
     context_prompt:(_el('SCP')?.value||'').trim(),
@@ -1966,11 +2485,17 @@ function saveSettings(){
     translate_to:  langs,
     silence_s:    +_el('SSL').value/10,
     vad_threshold:+_el('SVL').value/100,
+    spk_threshold:  +_el('SSPK').value/100,
+    spk_min_frames: +_el('SSPKF').value,
     max_sentence_s:+_el('SML').value,
     ctx_sentences: +_el('SCL').value,
     font_size:    +_el('SFS').value,
     auto_scroll:  +_el('SAS').value===1,
   };
+  _modelReady = false;
+  DOT.classList.remove('on');
+  TST.textContent = T('statusConnecting');
+  _applyRecUI();
   send({action:'update_settings',settings});
   applySettings(settings);
   closeSettings();
@@ -2202,70 +2727,120 @@ OV.addEventListener('click',e=>{ if(e.target===OV) closeSettings(); });
 EV.addEventListener('click',e=>{ if(e.target===EV) EV.style.display='none'; });
 
 // ── Download guide ────────────────────────────────────────
-let _dlQueue=[], _currentDlRepo=null;
+let _dlQueue=[], _currentDlRepo=null, _dlPendingRepos=[];
+let _backendStarting=false;
+
+async function startBackend(){
+  if(_backendStarting || _modelReady) return;
+  _backendStarting = true;
+  try {
+    await fetch('/api/start_worker', {method:'POST'});
+  } catch(e) {
+    console.warn('start worker failed', e);
+  } finally {
+    _backendStarting = false;
+  }
+}
 
 function showDownloadGuide(models){
   const ov=_el('DL_OVERLAY');
   const entries=Object.entries(models);
-  if(entries.every(([,v])=>v.cached)){ ov.style.display='none'; return; }
+  // Only show overlay if any required (non-optional) model is missing
+  const requiredMissing=entries.some(([,v])=>!v.cached&&!v.optional);
+  const optionalMissing=entries.some(([,v])=>!v.cached&&v.optional);
+  if(!requiredMissing&&!optionalMissing){ ov.style.display='none'; return; }
 
   let modelHTML=entries.map(([repo,info])=>{
-    if(info.cached) return `<div class="dl-model"><div class="dl-model-head"><span class="dl-model-name">${info.label}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-cached">${T('dlCached')}</div></div>`;
     const safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
-    return `<div class="dl-model" id="dlm_${safeId}"><div class="dl-model-head"><span class="dl-model-name">${info.label}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-model-desc">${info.desc}</div><div class="dl-status" id="dls_${safeId}">${T('dlWaiting')}</div><div class="dl-progress" id="dlp_${safeId}"><div class="dl-progress-bar" id="dlb_${safeId}"></div></div></div>`;
+    const optBadge=info.optional?` <span style="font-size:11px;opacity:0.6">${T('dlSubOptional')}</span>`:'';
+    if(info.cached){
+      return `<div class="dl-model"><div class="dl-model-head"><span class="dl-model-name">${info.label}${optBadge}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-cached">${T('dlCached')}</div></div>`;
+    }
+    // SenseVoice: show warning if mlx-audio not installed
+    if(info.type==='sensevoice'&&info.mlx_audio_installed===false){
+      return `<div class="dl-model"><div class="dl-model-head"><span class="dl-model-name">${info.label}${optBadge}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-model-desc">${info.desc}</div><div class="dl-status dl-status-warn">${T('dlNoPkg')}</div></div>`;
+    }
+    return `<div class="dl-model" id="dlm_${safeId}"><div class="dl-model-head"><span class="dl-model-name">${info.label}${optBadge}</span><span class="dl-model-size">${info.size}</span></div><div class="dl-model-desc">${info.desc}</div><div class="dl-status" id="dls_${safeId}">${T('dlWaiting')}</div><div class="dl-progress" id="dlp_${safeId}" style="display:none"><div class="dl-progress-bar-wrap"><div class="dl-progress-bar" id="dlb_${safeId}"></div></div><span class="dl-pct" id="dlpct_${safeId}"></span></div></div>`;
   }).join('');
 
-  const missingRepos=JSON.stringify(entries.filter(([,v])=>!v.cached).map(([r])=>r));
-  ov.innerHTML=`<div class="dl-box"><div class="dl-head"><div class="dl-title">${T('dlTitle')}</div><div class="dl-sub">${T('dlSub')}</div></div><div class="dl-body">${modelHTML}</div><div class="dl-foot"><button class="dl-btn dl-btn-skip" onclick="skipDownload()">${T('dlSkip')}</button><button class="dl-btn dl-btn-primary" id="DL_START_BTN" onclick="startDownloads(${missingRepos})">${T('dlStart')}</button></div></div>`;
+  // Missing repos that can actually be downloaded (mlx-audio installed or not sensevoice)
+  const downloadable=entries.filter(([,v])=>!v.cached&&!(v.type==='sensevoice'&&v.mlx_audio_installed===false)).map(([r])=>r);
+  // Store in global so the button can reach it without inline JSON (which breaks onclick attr due to quotes)
+  _dlPendingRepos = downloadable;
+  ov.innerHTML=`<div class="dl-box"><div class="dl-head"><div class="dl-title">${T('dlTitle')}</div><div class="dl-sub">${T('dlSub')}</div></div><div class="dl-body">${modelHTML}</div><div class="dl-foot"><button class="dl-btn dl-btn-skip" id="DL_SKIP_BTN">${T('dlSkip')}</button>${downloadable.length?`<button class="dl-btn dl-btn-primary" id="DL_START_BTN">${T('dlStart')}</button>`:''}</div></div>`;
+  // Attach handlers after innerHTML (avoids inline-onclick quote-breaking issue)
+  const skipBtn=_el('DL_SKIP_BTN'); if(skipBtn) skipBtn.onclick=skipDownload;
+  const startBtn=_el('DL_START_BTN'); if(startBtn) startBtn.onclick=()=>startDownloads(_dlPendingRepos);
   ov.style.display='flex';
 }
 
 async function startDownloads(repos){
-  _el('DL_START_BTN').disabled=true;
-  _el('DL_START_BTN').textContent=T('dlStarting');
+  const btn=_el('DL_START_BTN');
+  if(btn){ btn.disabled=true; btn.textContent=T('dlStarting'); }
   _dlQueue=[...repos];
   processDownloadQueue();
 }
 
 async function processDownloadQueue(){
   if(_dlQueue.length===0){
-    _el('DL_START_BTN').textContent=T('dlAllDone');
-    _el('DL_START_BTN').disabled=false;
-    _el('DL_START_BTN').onclick=()=>{ _el('DL_OVERLAY').style.display='none'; };
+    const btn=_el('DL_START_BTN');
+    if(btn){ btn.textContent=T('dlAllDone'); btn.disabled=false; btn.onclick=()=>{ _el('DL_OVERLAY').style.display='none'; startBackend(); }; }
+    startBackend();
     return;
   }
   const repo=_dlQueue.shift();
   const safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
-  const statusEl=_el('dls_'+safeId), progEl=_el('dlp_'+safeId);
+  const statusEl=_el('dls_'+safeId), progEl=_el('dlp_'+safeId), barEl=_el('dlb_'+safeId), pctEl=_el('dlpct_'+safeId);
   if(statusEl){ statusEl.textContent=T('dlDownloading'); statusEl.className='dl-status'; }
-  if(progEl) progEl.style.display='block';
+  if(progEl) progEl.style.display='flex';
   _currentDlRepo=repo;
-  await fetch('/api/download/'+repo,{method:'POST'});
+  try {
+    const res = await fetch('/api/download/'+repo,{method:'POST'});
+    const data = await res.json().catch(()=>({ok:false,success:false}));
+    if(data.success){
+      if(statusEl){ statusEl.textContent=T('dlDone'); statusEl.className='dl-status ok'; }
+      if(barEl) barEl.style.width='100%';
+      if(pctEl) pctEl.textContent='100%';
+    } else {
+      if(statusEl){ statusEl.textContent=data.msg||T('dlFailed'); statusEl.className='dl-status err'; }
+    }
+  } catch(e) {
+    if(statusEl){ statusEl.textContent=T('dlError').replace('{msg}',e.message||T('dlFailed')); statusEl.className='dl-status err'; }
+  }
+  setTimeout(processDownloadQueue,500);
 }
 
 function handleDlMsg(m){
   const repo=m.repo||'', safeId=repo.replace(/[^a-zA-Z0-9]/g,'_');
-  const statusEl=_el('dls_'+safeId), barEl=_el('dlb_'+safeId);
+  const statusEl=_el('dls_'+safeId), barEl=_el('dlb_'+safeId), pctEl=_el('dlpct_'+safeId);
   if(m.type==='dl_start'){
     if(statusEl) statusEl.textContent=T('dlConnecting');
   } else if(m.type==='dl_progress'){
-    if(statusEl){ statusEl.textContent=m.line||''; statusEl.className='dl-status'; }
-    if(barEl){ const cur=parseFloat(barEl.style.width)||0; barEl.style.width=Math.min(cur+0.3,95)+'%'; }
+    // Use real percentage from server when available, else gentle crawl
+    if(barEl){
+      if(m.pct!=null){
+        barEl.style.width=Math.min(m.pct,99)+'%';
+        if(pctEl) pctEl.textContent=m.pct+'%';
+      } else {
+        const cur=parseFloat(barEl.style.width)||0;
+        barEl.style.width=Math.min(cur+0.3,95)+'%';
+      }
+    }
+    if(statusEl&&m.line){ statusEl.textContent=m.line; statusEl.className='dl-status'; }
   } else if(m.type==='dl_done'){
     if(m.success){
       if(statusEl){ statusEl.textContent=T('dlDone'); statusEl.className='dl-status ok'; }
       if(barEl) barEl.style.width='100%';
+      if(pctEl) pctEl.textContent='100%';
     } else {
       if(statusEl){ statusEl.textContent=T('dlFailed'); statusEl.className='dl-status err'; }
     }
-    setTimeout(processDownloadQueue,500);
   } else if(m.type==='dl_error'){
     if(statusEl){ statusEl.textContent=T('dlError').replace('{msg}',m.msg||T('dlFailed')); statusEl.className='dl-status err'; }
-    setTimeout(processDownloadQueue,500);
   }
 }
 
-function skipDownload(){ _el('DL_OVERLAY').style.display='none'; }
+function skipDownload(){ _el('DL_OVERLAY').style.display='none'; startBackend(); }
 
 // ── Boot ──────────────────────────────────────────────────
 applyUILang();   // render all strings before anything else
@@ -2275,7 +2850,13 @@ connect();
   try {
     const res=await fetch('/api/check_models');
     const models=await res.json();
-    if(Object.entries(models).some(([,v])=>!v.cached)) showDownloadGuide(models);
+    // Store mlx_audio status globally so openSettings can use it
+    const svEntry=Object.values(models).find(v=>v.type==='sensevoice');
+    G._mlxAudioOk = svEntry ? (svEntry.mlx_audio_installed!==false) : true;
+    // Only show download overlay if any model (required or optional) is missing and downloadable
+    const anyMissing=Object.entries(models).some(([,v])=>!v.cached&&!(v.type==='sensevoice'&&v.mlx_audio_installed===false));
+    if(anyMissing) showDownloadGuide(models);
+    else startBackend();
   } catch(e){}
 })();
 </script>

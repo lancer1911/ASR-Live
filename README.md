@@ -9,7 +9,7 @@
 ![RAM](https://img.shields.io/badge/RAM-24%20GB%20minimum-red)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python)
 ![MLX](https://img.shields.io/badge/MLX-0.31%2B-orange)
-![Version](https://img.shields.io/badge/version-4.3x-informational)
+![Version](https://img.shields.io/badge/version-4.4l-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -62,11 +62,13 @@ Lancer1911 ASR Live runs up to three large AI models simultaneously — a Whispe
 
 - **Fully offline** — Recognition, correction, and translation run entirely locally. No audio or text ever leaves your machine.
 - **Native .app** — Ships as a double-click macOS application; no terminal required after initial setup.
+- **Dual ASR backends** — Choose between **Whisper** (high accuracy, 99 languages) and **SenseVoice** (3–5× faster, emotion/event detection, Chinese/English/Japanese/Korean). Both can be installed side-by-side and switched in Settings.
 - **Real-time subtitles** — Voice Activity Detection (VAD)-triggered sentence segmentation delivers results in approximately 0.5–2 seconds end-to-end.
 - **Three-language auto-detection** — Recognises Chinese, English, and Japanese in real time, with optional translation into Korean, French, German, and Spanish.
-- **ASR language lock** — Pin Whisper to a specific language (Auto / Chinese / English / Japanese) to prevent mis-detection in monolingual sessions.
+- **ASR language lock** — Pin the ASR engine to a specific language (Auto / Chinese / English / Japanese) to prevent mis-detection in monolingual sessions.
 - **LLM semantic correction** — Qwen3 fixes homophones, punctuation, and domain terminology using recent conversational context.
 - **Scenario and terminology prompts** — A free-text field is injected into both Whisper's `initial_prompt` and the LLM system prompt. List key terms directly for best results (see Settings section).
+- **ModelScope / plain-directory model support** — Models downloaded via ModelScope or placed directly in the cache root (non-`snapshots/` layout) are detected and loaded automatically. No path configuration needed.
 - **Segmented MP3 recording** — Audio is written in 5-minute segments during the session and merged into a single timestamped MP3 on stop. Pause and resume without losing audio.
 - **Microphone software gain** — Boost the captured signal up to 4× directly in the app when macOS restricts the hardware mic level.
 - **Subtitle playback sync** — An inline audio player lets you replay the recording while the transcript scrolls in lock-step with the audio position.
@@ -74,7 +76,7 @@ Lancer1911 ASR Live runs up to three large AI models simultaneously — a Whispe
 - **Dark / light themes** — One-click toggle, persisted across sessions.
 - **Multi-format export** — TXT, SRT, JSON, and Markdown, with per-language filtering and a native macOS save panel.
 - **Built-in model downloader** — First-run wizard detects missing models and streams download progress directly in the UI.
-- **Hallucination filtering** — Whisper outputs with more than 50% repeated tokens are automatically discarded.
+- **Hallucination filtering** — ASR outputs with more than 50% repeated tokens are automatically discarded.
 - **Speaker diarization** — Automatically identifies up to 4 speakers using pyannote-audio voice embeddings. Each subtitle card is labelled with a colour-coded speaker badge. Speakers can be renamed and manually corrected. Speaker labels are included in all export formats.
 
 ---
@@ -106,18 +108,38 @@ pip install onnxruntime pywebview
 
 ### 4. Download models
 
+**Option A — Whisper (default, 99 languages)**
+
 ```bash
-# ASR model — recommended (~3 GB)
+# Recommended — fast turbo model (~3 GB)
 hf download mlx-community/whisper-large-v3-turbo
 
-# ASR model — highest accuracy (~6 GB, slower)
+# Alternative — highest accuracy, slower (~3 GB)
 # hf download mlx-community/whisper-large-v3-mlx
+```
 
-# LLM for correction and translation (~8 GB)
+**Option B — SenseVoice (faster, Chinese/English/Japanese/Korean)**
+
+```bash
+pip install mlx-audio
+hf download mlx-community/SenseVoiceSmall
+```
+
+> Both backends can be installed side-by-side. Switch between them in **Settings → Select ASR Family**.
+
+**LLM for correction and translation**
+
+```bash
+# Default (~8 GB)
 hf download mlx-community/Qwen3-14B-4bit
+
+# High-quality alternative — requires ≥48 GB unified memory (~16 GB)
+# hf download mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit
 ```
 
 > Models are cached in `~/.cache/huggingface/hub/` and work offline once downloaded. You can also download them through the built-in guide after first launch.
+
+> **ModelScope users:** models downloaded via ModelScope are detected automatically. No path configuration needed.
 
 ### 5. Speaker Diarization Models (Optional)
 
@@ -221,9 +243,14 @@ The finished `Lancer1911 ASR Live.dmg` will be in `~/Desktop/ASR_Live_DMG_src/`.
 
 ## Settings
 
-### ASR model
+### ASR backend
 
-Automatically lists all locally cached Whisper models. Switch between whisper-large-v3-turbo (faster) and whisper-large-v3 (more accurate) without restarting.
+Select **Whisper** or **SenseVoice** under **Select ASR Family**. The model dropdown updates to show only locally cached models of the selected type. Switching takes effect on the next Start (or immediately when not recording).
+
+| Backend | Speed | Languages | Notes |
+|---|---|---|---|
+| Whisper large-v3-turbo | ~1–2 s/sentence | 99 | Default; best for multilingual sessions |
+| SenseVoice Small | ~0.3–0.5 s/sentence | zh/en/ja/ko/yue | Requires `mlx-audio`; no `initial_prompt` support |
 
 ### LLM correction model
 
@@ -233,7 +260,7 @@ Automatically lists locally cached MLX-format LLMs — Qwen3, LLaMA, Gemma, Mist
 
 Enter domain background and vocabulary for the current session. The same text is applied simultaneously to both models:
 
-- **Whisper `initial_prompt`** — Biases acoustic decoding toward listed terms.
+- **Whisper `initial_prompt`** — Biases acoustic decoding toward listed terms. (Not applicable to SenseVoice.)
 - **LLM system prompt** — Guides semantic correction toward the correct spelling of domain terms.
 
 **Listing key terms directly produces better results than describing the scene in prose:**
@@ -251,7 +278,7 @@ This is a meeting about patents and medical topics.
 
 ### ASR language lock
 
-Select **Auto** to let Whisper detect the language on each sentence, or pin to **Chinese / English / Japanese** for monolingual sessions. The lock cannot be changed while recording is active.
+Select **Auto** to let the ASR engine detect the language on each sentence, or pin to **Chinese / English / Japanese** for monolingual sessions. The lock cannot be changed while recording is active.
 
 ### Translation targets
 
@@ -265,6 +292,7 @@ Requires the optional pyannote models (see Quick Start §5). When active the sid
 |---|---|---|---|
 | Voice match threshold | 0.68 | 0.60–0.98 | Cosine similarity required to match an existing speaker. Lower = more lenient. |
 | New speaker confirm sentences | 2 | 1–4 | Frames accumulated before registering a new speaker. Higher = fewer false registrations. |
+| Speaker warmup | 20 s | — | Voice audio accumulated before speaker labels are output; prevents early mis-identification. |
 
 Click a speaker badge on any subtitle card to reassign it to a different speaker. Click a speaker label in the sidebar to rename it — all cards update immediately.
 
@@ -272,9 +300,9 @@ Click a speaker badge on any subtitle card to reassign it to a different speaker
 
 | Parameter | Default | Range | Notes |
 |---|---|---|---|
-| Microphone gain | 1.5× | 1.0–4.0× | Software boost applied before Voice Activity Detection (VAD) and Whisper |
-| End-of-sentence silence | 0.6 s | 0.2–2.0 s | Pause duration that triggers sentence segmentation |
-| VAD sensitivity | 0.45 | 0.20–0.80 | Higher = less sensitive; increase to 0.6–0.7 in noisy environments |
+| Microphone gain | 1.5× | 1.0–4.0× | Software boost applied before Voice Activity Detection (VAD) and ASR |
+| End-of-sentence silence | 0.8 s | 0.2–2.0 s | Pause duration that triggers sentence segmentation |
+| VAD sensitivity | 0.40 | 0.20–0.80 | Higher = less sensitive; increase to 0.6–0.7 in noisy environments |
 | Maximum utterance length | 20 s | — | Forces segmentation if a sentence exceeds this duration |
 | Save recording | Enabled | — | Disable for transcription-only mode with no files written |
 | MP3 bitrate | 192 kbps | 64 / 128 / 192 / 320 | Applied to the merged final file |
@@ -289,7 +317,7 @@ Click a speaker badge on any subtitle card to reassign it to a different speaker
 - After **Stop**, segments are merged in the background into a single file: `ASRLive_YYYYMMDD_HHMMSS.mp3`, saved to `~/Downloads` by default. A native save panel appears in windowed mode.
 - The **playback bar** appears automatically once the file is ready. It supports play/pause, scrubbing, volume control, and a "follow playback" mode that scrolls the transcript in sync.
 - Each transcript entry stores its precise start offset in the MP3. Clicking an entry in follow mode jumps the player to that sentence.
-- On exit, the application waits up to 30 seconds for any pending encoding to finish before quitting.
+- On exit, the application waits up to 10 seconds for any pending encoding to finish before quitting.
 
 ---
 
@@ -338,8 +366,14 @@ Confirm ffmpeg is installed (`brew install ffmpeg`) and that "Save recording" is
 **`No module named 'onnxruntime'`.**  
 `pip install onnxruntime`
 
+**`No module named 'mlx_audio'` when using SenseVoice.**  
+`pip install mlx-audio`
+
 **Speaker ID shows "Not installed" in the sidebar.**  
 Follow Quick Start §5. If packages are installed but the model is missing, run `hf download pyannote/embedding && hf download pyannote/segmentation-3.0`. Use **Settings → Check Speaker ID Setup** for an in-app walkthrough.
+
+**A model downloaded via ModelScope is not detected.**  
+Ensure the weight files (`.safetensors` / `.bin` / `.npz`) are present under `~/.cache/huggingface/hub/models--<org>--<name>/`. The app scans for root-level weight files automatically on each launch — no path configuration is needed.
 
 **Model downloads are slow or fail.**  
 Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
@@ -352,6 +386,7 @@ Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
 |---|---|
 | [mlx-whisper](https://github.com/ml-explore/mlx-examples) | Native Whisper inference on Apple Silicon via MLX |
 | [mlx-lm](https://github.com/ml-explore/mlx-examples) | Native LLM inference on Apple Silicon via MLX |
+| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | SenseVoice inference on Apple Silicon via MLX |
 | [Silero VAD](https://github.com/snakers4/silero-vad) | Voice activity detection |
 | [FastAPI](https://fastapi.tiangolo.com) | Backend API and WebSocket server |
 | [pywebview](https://pywebview.flowrl.com) | Native macOS window (WKWebView) |
@@ -359,6 +394,7 @@ Use the Hugging Face mirror: `export HF_ENDPOINT=https://hf-mirror.com`
 | [ffmpeg](https://ffmpeg.org) | MP3 encoding for recordings |
 | [Qwen3](https://huggingface.co/Qwen) | LLM for semantic correction and translation |
 | [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | Default ASR model |
+| [SenseVoiceSmall](https://huggingface.co/FunAudioLLM/SenseVoiceSmall) | Optional fast ASR model |
 | [pyannote-audio](https://github.com/pyannote/pyannote-audio) | Speaker diarization via voice embeddings |
 | [PyTorch](https://pytorch.org) | Required by pyannote-audio |
 

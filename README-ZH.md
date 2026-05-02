@@ -9,7 +9,7 @@
 ![RAM](https://img.shields.io/badge/RAM-24%20GB%20minimum-red)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python)
 ![MLX](https://img.shields.io/badge/MLX-0.31%2B-orange)
-![Version](https://img.shields.io/badge/version-4.3x-informational)
+![Version](https://img.shields.io/badge/version-4.4l-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -43,7 +43,7 @@ Lancer1911 ASR Live 最多同时运行三个大型 AI 模型 —— Whisper ASR 
 
 <p align="center">
   <img src="images/screenshot_settings.png" alt="设置面板" width="480">
-  <br><em>设置面板 — 模型选择、场景提示词与音频配置</em>
+  <br><em>设置面板 — ASR 引擎选择、模型、场景提示词与音频配置</em>
 </p>
 
 <p align="center">
@@ -62,11 +62,13 @@ Lancer1911 ASR Live 最多同时运行三个大型 AI 模型 —— Whisper ASR 
 
 - **完全离线** — 识别、矫正和翻译全部在本地运行，语音和文字数据不会离开你的 Mac。
 - **原生 .app** — 以双击即用的 macOS 应用程序形式发布，初始安装后无需使用终端。
+- **双 ASR 引擎** — 可在 **Whisper**（高精度，支持 99 种语言）和 **SenseVoice**（速度快 3–5 倍，支持情绪/事件检测，中英日韩）之间选择，两者可同时安装、在设置中切换。
 - **实时字幕** — 基于语音活动检测（VAD）的句子分割，端到端延迟约 0.5–2 秒。
 - **三语言自动检测** — 实时识别中文、英文、日文，并可选翻译为韩文、法文、德文、西班牙文。
-- **ASR 语言锁定** — 将 Whisper 固定为特定语言（自动 / 中文 / 英文 / 日文），避免单语种会话中的误检测。
+- **ASR 语言锁定** — 将 ASR 引擎固定为特定语言（自动 / 中文 / 英文 / 日文），避免单语种会话中的误检测。
 - **LLM 语义矫正** — Qwen3 基于近期对话上下文修正同音字、标点和专业术语。
 - **场景与术语提示词** — 自由文本字段同时注入 Whisper 的 `initial_prompt` 和 LLM 系统提示词，直接列出关键术语效果最佳（详见设置说明）。
+- **ModelScope / 普通目录模型兼容** — 通过 ModelScope 下载、或直接存放于缓存目录根层（非 `snapshots/` 子目录）的模型权重，可被自动识别和加载，无需任何路径配置。
 - **分段 MP3 录音** — 录音期间每 5 分钟写入一段，停止时合并为单个带时间戳的 MP3 文件。暂停和继续不丢失音频。
 - **麦克风软件增益** — 当 macOS 限制硬件麦克风音量时，可在应用内直接将信号提升最多 4 倍。
 - **字幕回放同步** — 内置音频播放器支持录音回放，转录文字随音频位置同步滚动。
@@ -74,7 +76,7 @@ Lancer1911 ASR Live 最多同时运行三个大型 AI 模型 —— Whisper ASR 
 - **深色 / 浅色主题** — 一键切换，跨会话保留设置。
 - **多格式导出** — 支持 TXT、SRT、JSON 和 Markdown，可按语言筛选，调用原生 macOS 保存面板。
 - **内置模型下载器** — 首次运行向导自动检测缺失模型，并在界面中直接显示下载进度。
-- **幻觉过滤** — Whisper 输出中重复 token 超过 50% 的内容自动丢弃。
+- **幻觉过滤** — ASR 输出中重复 token 超过 50% 的内容自动丢弃。
 - **说话人日志** — 使用 pyannote-audio 声纹 embedding 自动识别最多 4 位说话人。每张字幕卡片显示彩色说话人标签，可重命名，可手动修正，发言人信息随所有导出格式一并输出。
 
 ---
@@ -106,18 +108,38 @@ pip install onnxruntime pywebview
 
 ### 4. 下载 AI 模型
 
+**方案 A — Whisper（默认，99 种语言）**
+
 ```bash
-# ASR 模型 — 推荐（约 3 GB）
+# 推荐 — 快速 turbo 模型（约 3 GB）
 hf download mlx-community/whisper-large-v3-turbo
 
-# ASR 模型 — 最高精度（约 6 GB，速度较慢）
+# 可选 — 最高精度，速度较慢（约 3 GB）
 # hf download mlx-community/whisper-large-v3-mlx
+```
 
-# LLM 矫正与翻译模型（约 8 GB）
+**方案 B — SenseVoice（更快，支持中英日韩）**
+
+```bash
+pip install mlx-audio
+hf download mlx-community/SenseVoiceSmall
+```
+
+> 两种引擎可同时安装，在**设置 → 选择 ASR 家族**中切换。
+
+**LLM 矫正与翻译模型**
+
+```bash
+# 默认（约 8 GB）
 hf download mlx-community/Qwen3-14B-4bit
+
+# 高质量可选版本 — 需要 ≥48 GB 统一内存（约 16 GB）
+# hf download mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit
 ```
 
 > 模型缓存于 `~/.cache/huggingface/hub/`，下载后完全离线可用。也可在首次启动后通过内置向导下载。
+
+> **ModelScope 用户：** 通过 ModelScope 下载的模型会被自动识别，无需任何路径配置。
 
 ### 5. 说话人识别模型（可选）
 
@@ -221,9 +243,14 @@ create-dmg \
 
 ## 设置说明
 
-### ASR 模型
+### ASR 引擎
 
-自动列出所有本地缓存的 Whisper 模型，可在 whisper-large-v3-turbo（更快）和 whisper-large-v3（更精准）之间切换，无需重启。
+在**选择 ASR 家族**中选择 **Whisper** 或 **SenseVoice**，下方模型下拉框自动更新为本地已缓存的对应模型。切换在下次录音开始时生效（未录音时立即生效）。
+
+| 引擎 | 速度 | 支持语言 | 备注 |
+|---|---|---|---|
+| Whisper large-v3-turbo | ~1–2 秒/句 | 99 种 | 默认；多语言会话首选 |
+| SenseVoice Small | ~0.3–0.5 秒/句 | 中英日韩粤 | 需安装 `mlx-audio`；不支持 `initial_prompt` |
 
 ### LLM 矫正模型
 
@@ -233,7 +260,7 @@ create-dmg \
 
 为当前会话输入领域背景和词汇，同时应用于两个模型：
 
-- **Whisper `initial_prompt`** — 将声学解码偏向所列术语。
+- **Whisper `initial_prompt`** — 将声学解码偏向所列术语。（SenseVoice 不支持此参数。）
 - **LLM 系统提示词** — 引导语义矫正使用正确的专业术语拼写。
 
 **直接列出关键术语效果优于描述场景：**
@@ -251,7 +278,7 @@ create-dmg \
 
 ### ASR 语言锁定
 
-选择**自动**让 Whisper 逐句检测语言，或固定为**中文 / 英文 / 日文**用于单语种会话。录音进行中不可更改。
+选择**自动**让 ASR 引擎逐句检测语言，或固定为**中文 / 英文 / 日文**用于单语种会话。录音进行中不可更改。
 
 ### 翻译目标语言
 
@@ -261,9 +288,9 @@ create-dmg \
 
 | 参数 | 默认值 | 范围 | 说明 |
 |---|---|---|---|
-| 麦克风增益 | 1.5× | 1.0–4.0× | 在 VAD 和 Whisper 之前应用的软件增益 |
-| 句尾静音阈值 | 0.6 s | 0.2–2.0 s | 触发句子分割的停顿时长 |
-| VAD 灵敏度 | 0.45 | 0.20–0.80 | 越高越不灵敏；嘈杂环境建议调至 0.6–0.7 |
+| 麦克风增益 | 1.5× | 1.0–4.0× | 在 VAD 和 ASR 之前应用的软件增益 |
+| 句尾静音阈值 | 0.8 s | 0.2–2.0 s | 触发句子分割的停顿时长 |
+| VAD 灵敏度 | 0.40 | 0.20–0.80 | 越高越不灵敏；嘈杂环境建议调至 0.6–0.7 |
 | 最长单句时长 | 20 s | — | 超过此时长强制分割 |
 | 录音保存 | 开启 | — | 关闭则为纯转录模式，不写入文件 |
 | MP3 码率 | 192 kbps | 64 / 128 / 192 / 320 | 应用于最终合并文件 |
@@ -277,6 +304,7 @@ create-dmg \
 |---|---|---|---|
 | 声纹匹配阈值 | 0.68 | 0.60–0.98 | 余弦相似度达到此值才匹配已有说话人，越低越宽松 |
 | 新发言人确认句数 | 2 | 1–4 | 注册新说话人前需积累的句数，越高误注册越少 |
+| 说话人预热时长 | 20 秒 | — | 累计有效语音超过此时长后才开始输出说话人标签，避免冷启动误判 |
 
 点击字幕卡片上的说话人标签可将其改为其他说话人（手动修正）；点击侧边栏说话人标签可重命名，所有卡片立即同步更新。
 
@@ -289,7 +317,7 @@ create-dmg \
 - **停止**后，各段在后台合并为单个文件：`ASRLive_YYYYMMDD_HHMMSS.mp3`，默认保存至 `~/Downloads`，窗口模式下弹出原生保存面板。
 - 文件就绪后**回放栏**自动出现，支持播放/暂停、进度拖拽、音量控制和「跟随回放」模式（转录随音频同步滚动）。
 - 每条转录记录保存其在 MP3 中的精确起始偏移量；在跟随模式下点击条目，播放器跳转到对应句子。
-- 退出时应用最多等待 30 秒等待正在进行的编码完成后再退出。
+- 退出时应用最多等待 10 秒等待正在进行的编码完成后再退出。
 
 ---
 
@@ -338,8 +366,14 @@ create-dmg \
 **`No module named 'onnxruntime'`。**  
 `pip install onnxruntime`
 
+**使用 SenseVoice 时提示 `No module named 'mlx_audio'`。**  
+`pip install mlx-audio`
+
 **发言人识别显示「未安装」。**  
 参照快速开始第 5 节安装。若依赖包已安装但模型缺失，运行 `hf download pyannote/embedding && hf download pyannote/segmentation-3.0`。也可点击**设置 → 检查发言人识别功能**查看应用内引导。
+
+**通过 ModelScope 下载的模型未被识别。**  
+确认模型权重（`.safetensors` / `.bin` / `.npz`）存放于 `~/.cache/huggingface/hub/models--<org>--<name>/` 目录根层。应用每次启动时自动扫描，无需手动配置路径。
 
 **模型下载缓慢或失败。**  
 使用 HuggingFace 镜像：`export HF_ENDPOINT=https://hf-mirror.com`
@@ -352,6 +386,7 @@ create-dmg \
 |---|---|
 | [mlx-whisper](https://github.com/ml-explore/mlx-examples) | 通过 MLX 在 Apple Silicon 上运行 Whisper |
 | [mlx-lm](https://github.com/ml-explore/mlx-examples) | 通过 MLX 在 Apple Silicon 上运行 LLM |
+| [mlx-audio](https://github.com/Blaizzy/mlx-audio) | 通过 MLX 在 Apple Silicon 上运行 SenseVoice |
 | [Silero VAD](https://github.com/snakers4/silero-vad) | 语音活动检测 |
 | [FastAPI](https://fastapi.tiangolo.com) | 后端 API 与 WebSocket 服务器 |
 | [pywebview](https://pywebview.flowrl.com) | 原生 macOS 窗口（WKWebView） |
@@ -359,6 +394,7 @@ create-dmg \
 | [ffmpeg](https://ffmpeg.org) | 录音 MP3 编码 |
 | [Qwen3](https://huggingface.co/Qwen) | 语义矫正与翻译 LLM |
 | [Whisper large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | 默认 ASR 模型 |
+| [SenseVoiceSmall](https://huggingface.co/FunAudioLLM/SenseVoiceSmall) | 可选高速 ASR 模型 |
 | [pyannote-audio](https://github.com/pyannote/pyannote-audio) | 说话人识别声纹 embedding |
 | [PyTorch](https://pytorch.org) | pyannote-audio 所需依赖 |
 

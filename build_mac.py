@@ -23,7 +23,7 @@ if "py2app" in sys.argv and "--dist-dir" not in sys.argv:
 
 setup(
     app=["launcher.py"],
-    name="ASR Live",
+    name="Lancer1911 ASR Live",
     data_files=[
         ("static", ["static/index.html", "static/i18n.js"]),
         ("",       ["main.py", "server.py", "model_worker.py",
@@ -33,8 +33,8 @@ setup(
         "argv_emulation": False,
         "iconfile":       "icon.icns",
         "plist": {
-            "CFBundleName":               "ASR Live",
-            "CFBundleDisplayName":        "ASR Live",
+            "CFBundleName":               "Lancer1911 ASR Live",
+            "CFBundleDisplayName":        "Lancer1911 ASR Live",
             "CFBundleIdentifier":         "com.local.asrlive",
             "CFBundleVersion":            "4.0.0",
             "CFBundleShortVersionString": "4.0",

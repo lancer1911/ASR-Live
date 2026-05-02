@@ -1,5 +1,5 @@
 /**
- * ASR Live – UI language strings
+ * Lancer1911 ASR Live – UI language strings
  * To add a new language: copy the `en` block, rename the key, translate every value.
  * Keys must stay identical across all languages.
  */
@@ -86,6 +86,14 @@ const I18N = {
     whisperHint:        '大=准但慢',
     whisperCurrent:     '{name}（当前）',
     whisperNone:        '未找到本地 Whisper 模型',
+    labelASRBackend:    'ASR 引擎',
+    asrBackendWhisper:  'Whisper（默认，99种语言）',
+    asrBackendSV:       'SenseVoiceSmall（更快，支持情绪检测）',
+    asrBackendSVNoModel:'SenseVoiceSmall（未下载）',
+    asrBackendSVNoPkg:  'SenseVoiceSmall（需安装 mlx-audio）',
+    labelSenseVoice:    'SenseVoice 模型',
+    senseVoiceNone:     '未找到本地 SenseVoice 模型',
+    senseVoiceCurrent:  '{name}（当前）',
     labelLLM:           'LLM 矫正模型',
     llmHint:            '影响翻译质量',
     llmLoading:         '加载中…',
@@ -162,8 +170,9 @@ const I18N = {
     scanFailed:         '扫描失败',
 
     /* ── download guide ── */
-    dlTitle:            '欢迎使用 ASR Live',
-    dlSub:              '首次使用需要下载 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。',
+    dlTitle:            '欢迎使用 Lancer1911 ASR Live',
+    dlSub:              '首次使用需要下载必需 AI 模型（约 11 GB），下载完成后完全离线运行。<br>请确保网络连接正常，下载过程中请勿关闭窗口。',
+    dlSubOptional:      '（可选）',
     dlCached:           '✓ 已下载',
     dlWaiting:          '等待下载…',
     dlConnecting:       '连接中…',
@@ -175,6 +184,7 @@ const I18N = {
     dlStart:            '开始下载',
     dlStarting:         '下载中…',
     dlAllDone:          '全部完成，进入应用',
+    dlNoPkg:            '需先安装 mlx-audio：pip install mlx-audio',
 
     /* ── language display names (used in subtitle badges & translation rows) ── */
     langName: { zh:'中文', en:'英文', ja:'日文', ko:'韩文', fr:'法文', de:'德文', es:'西班牙文' },
@@ -258,6 +268,14 @@ const I18N = {
     whisperHint:        'larger = more accurate but slower',
     whisperCurrent:     '{name} (current)',
     whisperNone:        'No local Whisper model found',
+    labelASRBackend:    'ASR Engine',
+    asrBackendWhisper:  'Whisper (default, 99 languages)',
+    asrBackendSV:       'SenseVoiceSmall (faster, emotion detection)',
+    asrBackendSVNoModel:'SenseVoiceSmall (not downloaded)',
+    asrBackendSVNoPkg:  'SenseVoiceSmall (requires mlx-audio)',
+    labelSenseVoice:    'SenseVoice Model',
+    senseVoiceNone:     'No local SenseVoice model found',
+    senseVoiceCurrent:  '{name} (current)',
     labelLLM:           'LLM Correction Model',
     llmHint:            'affects translation quality',
     llmLoading:         'Loading…',
@@ -334,8 +352,9 @@ const I18N = {
     scanFailed:         'Scan failed',
 
     /* ── download guide ── */
-    dlTitle:            'Welcome to ASR Live',
+    dlTitle:            'Welcome to Lancer1911 ASR Live',
     dlSub:              'First-time setup requires downloading AI models (~11 GB). After that, everything runs fully offline.<br>Ensure network access and do not close the window during download.',
+    dlSubOptional:      '(optional)',
     dlCached:           '✓ Already downloaded',
     dlWaiting:          'Waiting…',
     dlConnecting:       'Connecting…',
@@ -347,6 +366,7 @@ const I18N = {
     dlStart:            'Start Download',
     dlStarting:         'Downloading…',
     dlAllDone:          'All done — enter app',
+    dlNoPkg:            'Install mlx-audio first: pip install mlx-audio',
 
     /* ── language display names ── */
     langName: { zh:'Chinese', en:'English', ja:'Japanese', ko:'Korean', fr:'French', de:'German', es:'Spanish' },
