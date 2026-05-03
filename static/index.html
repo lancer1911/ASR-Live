@@ -1049,6 +1049,16 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
         </div>
       </div>
 
+      <!-- speaker warmup slider -->
+      <div class="sf">
+        <div class="sfl" id="SP_SPK_WARMUP_LBL">发言人预热时长 Speaker Warmup</div>
+        <div class="ssr">
+          <input type="range" min="0" max="30" value="0" step="5" id="SSPKW"
+            oninput="this.nextElementSibling.textContent=this.value+'s'">
+          <span class="ssc">0s</span>
+        </div>
+      </div>
+
       <!-- check speaker setup button -->
       <div class="sf full">
         <button id="SP_SPK_CHECK_BTN" onclick="checkSpeakerSetup()"
@@ -2449,6 +2459,12 @@ async function openSettings(){
       sspkf.value = cur.spk_min_frames !== undefined ? cur.spk_min_frames : 2;
       sspkf.nextElementSibling.textContent = sspkf.value;
     }
+    const sspkw = _el('SSPKW');
+    if(sspkw){
+      const wval = cur.spk_warmup_s !== undefined ? cur.spk_warmup_s : 0;
+      sspkw.value = wval;
+      sspkw.nextElementSibling.textContent = wval + 's';
+    }
 
     // Microphone
     try {
@@ -2487,6 +2503,7 @@ function saveSettings(){
     vad_threshold:+_el('SVL').value/100,
     spk_threshold:  +_el('SSPK').value/100,
     spk_min_frames: +_el('SSPKF').value,
+    spk_warmup_s:   +(_el('SSPKW')?.value ?? 0),
     max_sentence_s:+_el('SML').value,
     ctx_sentences: +_el('SCL').value,
     font_size:    +_el('SFS').value,

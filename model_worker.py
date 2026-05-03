@@ -208,7 +208,7 @@ def worker_main(task_q: Queue, result_q: Queue,
             resp = mlx_gen(
                 llm_model, llm_tok,
                 prompt=task["prompt"],
-                max_tokens=512,
+                max_tokens=800,
                 sampler=sampler,
                 verbose=False,
             )
@@ -232,8 +232,8 @@ class ModelWorker:
 
     def __init__(self, whisper_repo: str, llm_repo: str,
                  sensevoice_repo: str = "", asr_backend: str = "whisper"):
-        self.task_q   = Queue()
-        self.result_q = Queue()
+        self.task_q   = Queue(maxsize=12)   # ASR+LLM 任务上限，防止音频无限积压
+        self.result_q = Queue(maxsize=48)   # 结果队列上限
         self._proc = Process(
             target=worker_main,
             args=(self.task_q, self.result_q,
@@ -244,7 +244,26 @@ class ModelWorker:
         self._proc.start()
 
     def send(self, task: dict):
-        self.task_q.put(task)
+        kind = task.get("kind", "")
+        if kind == "retranslate":
+            # retranslate 是用户主动操作，不可丢弃，阻塞等待空位（最多 2s）
+            try:
+                self.task_q.put(task, timeout=2)
+            except Exception:
+                print("[Worker] retranslate 队列满，已丢弃", flush=True)
+        else:
+            # ASR / LLM：队列满时丢弃队头最旧任务，保持实时性
+            try:
+                self.task_q.put_nowait(task)
+            except Exception:
+                try:
+                    self.task_q.get_nowait()   # 丢掉最旧的一个
+                except Exception:
+                    pass
+                try:
+                    self.task_q.put_nowait(task)
+                except Exception:
+                    print(f"[Worker] {kind} 任务队列满，已丢弃", flush=True)
 
     def recv_nowait(self):
         try:
