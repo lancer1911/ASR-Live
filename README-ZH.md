@@ -207,7 +207,7 @@ open dist/
 **首次启动 Gatekeeper 警告：**
 
 ```bash
-xattr -cr "/Applications/Lancer1911 ASR Live.app"
+xattr -cr "/Applications/ASR Live.app"
 ```
 
 或右键 → 打开 → 在对话框中点击「打开」。
