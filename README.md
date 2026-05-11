@@ -207,7 +207,7 @@ The `.app` bundle is approximately 15 MB and does not embed MLX, PyTorch, or any
 **First-launch Gatekeeper warning:**
 
 ```bash
-xattr -cr "/Applications/ASR Live.app"
+xattr -cr "/Applications/Lancer1911 ASR Live.app"
 ```
 
 Or right-click → Open → click "Open" in the dialog.

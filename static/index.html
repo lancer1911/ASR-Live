@@ -782,7 +782,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 
 <!-- topbar -->
 <div class="top">
-  <div class="brand">LANCER1911<em>/</em>ASR LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.6a</span></div>
+  <div class="brand"><span><a id="brand-link" href="https://github.com/lancer1911/ASR-Live" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;cursor:default" onmouseover="this.style.textDecoration='underline';this.style.cursor='pointer'" onmouseout="this.style.textDecoration='none';this.style.cursor='default'">LANCER1911<em>/</em>ASR LIVE</a></span><span style="display:flex;align-items:center;gap:5px;letter-spacing:0"><span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.6a</span><span id="author-badge" title="" style="display:none;cursor:default;line-height:1"><svg width="11" height="13" viewBox="0 0 11 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 0.5L1 2.5V6C1 9 3 11.5 5.5 12.5C8 11.5 10 9 10 6V2.5L5.5 0.5Z" fill="#4caf5033" stroke="#4caf50" stroke-width="0.8"/><path d="M3.5 6.2L4.8 7.5L7.5 4.8" stroke="#4caf50" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></div>
   <div class="tmid">
     <div class="dot" id="DOT"></div>
     <span class="tst" id="TST"></span>
@@ -3103,6 +3103,32 @@ connect();
     if(anyMissing) showDownloadGuide(models);
     else startBackend();
   } catch(e){}
+})();
+</script>
+<script>
+(async function checkAuthor() {
+  try {
+    const r = await fetch('/api/author');
+    const { token } = await r.json();
+    // server 返回 SHA-256("Lancer1911")，前端再做一次 SHA-256 与硬编码值比对
+    // 两端均无明码，无法从任一端还原原始字符串
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+    const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const badge = document.getElementById('author-badge');
+    if (!badge) return;
+    if (hex === '43da6cc6e1b3747553706f17de53cf27beffbf35f617b652893bc1076d5e2ac1') {
+      badge.style.display = 'inline';
+      badge.title = '✓ Original release by Lancer1911';
+    } else {
+      badge.style.display = 'inline';
+      // 非原版：将盾牌改为警示色
+      const path = badge.querySelector('path');
+      if (path) { path.setAttribute('fill','#ff440022'); path.setAttribute('stroke','#ff4400'); }
+      const check = badge.querySelector('path:last-child');
+      if (check) check.setAttribute('stroke','#ff4400');
+      badge.title = '⚠ Unofficial build — review before use';
+    }
+  } catch(e) { /* server not reachable, skip */ }
 })();
 </script>
 </body>

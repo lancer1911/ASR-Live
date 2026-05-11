@@ -1565,6 +1565,11 @@ def create_app() -> FastAPI:
     @app.get("/ping")
     def ping(): return {"ok": True}
 
+    @app.get("/api/author")
+    def author_token():
+        # SHA-256("Lancer1911")，不含明码；前端再做一次 SHA-256 与硬编码值比对
+        return {"token": "d3dc834172883521ce721e5bd82a036d302277f81e30e6ee598a85e2918a187d"}
+
     @app.get("/api/models")
     def api_models(): return JSONResponse(scan_local_models())
 
