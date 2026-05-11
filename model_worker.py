@@ -173,7 +173,7 @@ def worker_main(task_q: Queue, result_q: Queue,
     result_q.put({"type": "status", "text": "就绪", "ready": True,
                   "asr_backend": asr_backend})
 
-    sampler = make_sampler(temp=0.05)
+    sampler = make_sampler(temp=0.0)   # 贪婪解码：矫正任务不需要创造性，温度越低越忠实原文
 
     # ── 主循环 ───────────────────────────────────────────────
     while True:
@@ -205,10 +205,18 @@ def worker_main(task_q: Queue, result_q: Queue,
 
         elif kind == "llm":
             t0 = time.perf_counter()
+            # 根据任务性质动态限制 token 数：矫正输出短，翻译输出长
+            prompt_str = task.get("prompt", "")
+            if "minimal ASR error corrector" in prompt_str:
+                max_tok = 300   # 矫正任务：输出只有 corrected + language，不需要多
+            elif "multilingual translator" in prompt_str:
+                max_tok = 600   # 翻译任务：多语言输出稍长
+            else:
+                max_tok = 800   # retranslate 等兼容任务保持原值
             resp = mlx_gen(
                 llm_model, llm_tok,
-                prompt=task["prompt"],
-                max_tokens=800,
+                prompt=prompt_str,
+                max_tokens=max_tok,
                 sampler=sampler,
                 verbose=False,
             )

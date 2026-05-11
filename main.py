@@ -113,10 +113,37 @@ def main():
         except KeyboardInterrupt:
             pass
     else:
-        # 原生窗口模式（默认）
-        # MLX 在独立子进程里，与 pywebview 的 Metal/WKWebView 完全隔离
-        import webview
+        import webview, os
 
+        class FileDialogAPI:
+            """暴露给前端 JS 的文件对话框接口（pywebview js_api）。"""
+            def __init__(self):
+                self._win = None
+            def set_window(self, win):
+                self._win = win
+            def open_file(self) -> dict:
+                """弹出原生打开对话框，返回 {ok, path, content} 或 {ok, cancelled}。"""
+                try:
+                    win = self._win
+                    if win is None:
+                        return {"ok": False, "error": "no window"}
+                    result = win.create_file_dialog(
+                        webview.OPEN_DIALOG,
+                        file_types=("ASR 会话文件 (*.asr)", "所有文件 (*.*)"),
+                        allow_multiple=False,
+                    )
+                    if not result:
+                        return {"ok": False, "cancelled": True}
+                    path = result[0] if isinstance(result, (list, tuple)) else result
+                    if not path:
+                        return {"ok": False, "cancelled": True}
+                    with open(path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    return {"ok": True, "path": path, "content": content}
+                except Exception as e:
+                    return {"ok": False, "error": str(e)}
+
+        api = FileDialogAPI()
         window = webview.create_window(
             title="Lancer1911 ASR Live",
             url=f"http://127.0.0.1:{PORT}",
@@ -125,7 +152,9 @@ def main():
             min_size=(960, 640),
             background_color="#0d0f12",
             text_select=True,
+            js_api=api,
         )
+        api.set_window(window)
         webview.start(
             debug="--debug" in sys.argv,
             private_mode=False,

@@ -20,6 +20,7 @@ const I18N = {
     btnSettings:        '设置',
     btnThemeTitle:      '切换主题',
     settingsDisabled:   '录音过程中无法修改设置，请先停止录音',
+    saveDisabledRecording: '录音进行中，请先停止录音再保存会话',
 
     /* ── status bar ── */
     statusConnecting:   '连接中…',
@@ -205,6 +206,7 @@ const I18N = {
     btnSettings:        'Settings',
     btnThemeTitle:      'Toggle theme',
     settingsDisabled:   'Settings unavailable while recording. Stop first.',
+    saveDisabledRecording: 'Recording in progress — stop recording before saving the session',
 
     /* ── status bar ── */
     statusConnecting:   'Connecting…',

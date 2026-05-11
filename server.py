@@ -1,5 +1,5 @@
 """
-FastAPI 后端 v4.4q — 子进程隔离 MLX，避免 macOS 26 beta Metal/asyncio 冲突
+FastAPI 后端 v4.6a — 子进程隔离 MLX，避免 macOS 26 beta Metal/asyncio 冲突
 内存泄漏修复：_pending清理 / context截断 / asr_queue限深 / chunks显式释放 / ws死连接清理 / 子进程强制kill
 v4.2j 新增：编辑原文/重翻译，未保存提醒，自定义弹窗
 v4.3a 新增：实时麦克风音量驱动波形图
@@ -18,6 +18,7 @@ v4.4n 修复：SpeakerTracker.identify() 四处逻辑错误
 v4.4o 修复：说话人 warmup 默认改为 0
 v4.4p 修复：短句发言人标记
 v4.4q 修复：task_q限深+旧任务丢弃；context改用corrected；定期purge_pending；centroid加UPDATE_THRESHOLD — duration 阈值 0.5→0.2s；identify 返回 None 时回落到上一发言人，设置页新增预热时长滑块 — translations 展开为多行格式防截断；/no_think 移至 user 消息末尾；retranslate corrected 占位符明确化
+v4.6a 修复：_flush_threads pause路径泄漏 / retranslate _pending持有ws引用 / _history_file未在stop时删除 / ws_clients定期全量清理
 """
 import asyncio, collections, json, os, queue, re, threading, time
 from contextlib import asynccontextmanager
@@ -433,7 +434,9 @@ def broadcast_sync(msg: dict):
     except Exception:
         pass
 
+_broadcast_count = 0
 async def _broadcast(msg: dict):
+    global _broadcast_count
     dead = []
     for ws in list(G.ws_clients):
         try:
@@ -443,6 +446,11 @@ async def _broadcast(msg: dict):
     for ws in dead:
         if ws in G.ws_clients:
             G.ws_clients.remove(ws)
+    # 每 500 次广播做一次全量存活检查，清理可能漏过的死连接
+    _broadcast_count += 1
+    if _broadcast_count % 500 == 0:
+        G.ws_clients[:] = [c for c in G.ws_clients
+                           if not getattr(c, "client_state", None) or c.client_state.value <= 1]
 
 # ─── 结果接收线程（轮询子进程 result_q）────────────────────────
 def result_receiver():
@@ -487,25 +495,62 @@ def handle_worker_result(msg: dict):
             with G._spk_lock:
                 G._spk_entry_pending.pop(tid, None)
             return
-        broadcast_sync({"type":"asr_partial","raw":raw,"lang":lang,"asr_ms":asr_ms})
-        # 构建 LLM prompt 并发送
-        ctx = list(G.context[-G.settings["ctx_sentences"]:])
-        prompt = build_llm_prompt(raw, lang, ctx)
+
+        # ── 改进①: 立即生成草稿 entry，让用户看到 raw 文本，无需等 LLM ──
         audio_start_time = msg.get("audio_start_time")
+        if audio_start_time:
+            ts_struct = time.localtime(audio_start_time)
+            subtitle_ts = time.strftime("%H:%M:%S", ts_struct)
+            rec_start = getattr(G, "_rec_start_time", None)
+            mp3_offset_s = round(audio_start_time - rec_start, 3) if rec_start else None
+        else:
+            subtitle_ts  = time.strftime("%H:%M:%S")
+            mp3_offset_s = None
+
+        draft_id = int(time.time() * 1000)
+        draft_entry = {
+            "id":           draft_id,
+            "raw":          raw,
+            "corrected":    raw,           # 草稿先用 raw 占位
+            "language":     lang,
+            "translations": {},
+            "asr_ms":       asr_ms,
+            "llm_ms":       0,
+            "timestamp":    subtitle_ts,
+            "mp3_offset_s": mp3_offset_s,
+            "speaker_id":   speaker_id,
+            "draft":        True,          # 标记为草稿，前端显示"矫正中…"
+        }
+        _history_append(draft_entry)
+        # 说话人晚到的情况同步处理
+        if speaker_id is None and spk_pending:
+            with G._spk_lock:
+                G._spk_entry_pending[tid] = draft_id
+        broadcast_sync({"type": "entry_draft", **draft_entry})
+
+        # ── 改进②: LLM 分两步——先只做矫正（快），再做翻译（慢）──
+        ctx = list(G.context[-G.settings["ctx_sentences"]:])
+        prompt_correct = build_correction_prompt(raw, lang, ctx)
         with G._task_id_lock:
             G._task_id += 1
             llm_tid = G._task_id
-        G._pending[llm_tid] = {"raw": raw, "lang": lang, "asr_ms": asr_ms,
-                                   "audio_start_time": audio_start_time,
-                                   "speaker_id": speaker_id,
-                                   "asr_task_id": tid if spk_pending else None,
-                                   "_created_at": time.time()}
+        G._pending[llm_tid] = {
+            "raw":              raw,
+            "lang":             lang,
+            "asr_ms":           asr_ms,
+            "audio_start_time": audio_start_time,
+            "speaker_id":       speaker_id,
+            "asr_task_id":      tid if spk_pending else None,
+            "draft_id":         draft_id,       # 对应草稿 entry 的 id
+            "kind":             "correct",      # 第一步：仅矫正
+            "_created_at":      time.time(),
+        }
         G.worker.send({
             "kind": "llm", "task_id": llm_tid,
-            "prompt": prompt, "raw": raw, "lang": lang, "asr_ms": asr_ms,
+            "prompt": prompt_correct, "raw": raw, "lang": lang, "asr_ms": asr_ms,
             "audio_start_time": audio_start_time,
         })
-        # context 在 llm_done 里用 corrected 追加，不在这里用 raw 追加
+        # context 在 correct 完成后用 corrected 追加，不在这里用 raw 追加
 
     elif t == "llm_done":
         resp   = msg.get("resp", "")
@@ -513,18 +558,16 @@ def handle_worker_result(msg: dict):
         raw    = msg.get("raw", "")
         lang   = msg.get("lang", "")
         asr_ms = msg.get("asr_ms", 0)
-        # 修复内存泄漏：清理已完成的 pending 任务
         tid = msg.get("task_id")
         pending_meta = G._pending.pop(tid, None)
 
-        # 解析 JSON
+        # ── 解析 LLM JSON 输出（共用逻辑）──────────────────────
         resp_clean = re.sub(r"<think>.*?</think>", "", resp, flags=re.DOTALL)
         text = re.sub(r"```json\s*|```", "", resp_clean).strip()
         out = {}
         try:
             out = json.loads(text)
         except Exception:
-            # 支持嵌套结构：贪婪匹配最外层 { ... }
             m = re.search(r"\{.*\}", text, re.DOTALL)
             if m:
                 try:
@@ -537,22 +580,28 @@ def handle_worker_result(msg: dict):
         corrected  = out.get("corrected", raw)
         language   = out.get("language", lang)
         trans_raw  = out.get("translations", {})
-        # 防御：LLM 偶尔返回非 dict
         if not isinstance(trans_raw, dict):
-            print(f"[LLM] translations 格式异常: {type(trans_raw)} = {trans_raw}", flush=True)
+            print(f"[LLM] translations 格式异常: {type(trans_raw)}", flush=True)
             trans_raw = {}
-        if not trans_raw and out:
-            # 有输出但没有翻译，打印调试信息
-            print(f"[LLM] 无翻译，out={json.dumps(out, ensure_ascii=False)[:200]}", flush=True)
-        rev_map    = {v: k for k, v in G.settings.get("translate_map", {}).items()}
-        trans_cn   = {rev_map.get(k, k): v for k, v in trans_raw.items()
-                      if isinstance(v, str)}
 
-        # retranslate 任务：只更新已有卡片，不新增 entry
+        # ── 防幻觉安全网（仅对 correct 步骤生效）─────────────────
+        # 如果 LLM 输出字数比原文多超过 15%，视为扩写幻觉，回退到 raw
+        if pending_meta and pending_meta.get("kind") == "correct" and raw:
+            raw_len  = len(raw)
+            corr_len = len(corrected) if corrected else 0
+            if corr_len > raw_len * 1.15 + 3:
+                print(
+                    f"[LLM] 矫正幻觉检测：输出({corr_len}字) > 原文({raw_len}字)×1.15，回退到 raw",
+                    flush=True
+                )
+                corrected = raw
+        rev_map  = {v: k for k, v in G.settings.get("translate_map", {}).items()}
+        trans_cn = {rev_map.get(k, k): v for k, v in trans_raw.items() if isinstance(v, str)}
+
+        # ── retranslate 任务：只更新已有卡片，不新增 entry ──────
         if pending_meta and pending_meta.get("kind") == "retranslate":
-            entry_id = pending_meta["entry_id"]
-            new_corrected = pending_meta["corrected"]  # 用用户手动输入的文本，不用 LLM corrected
-            # 更新内存 history
+            entry_id      = pending_meta["entry_id"]
+            new_corrected = pending_meta["corrected"]
             with G._history_lock:
                 for e in G.history:
                     if str(e.get("id")) == str(entry_id):
@@ -570,48 +619,111 @@ def handle_worker_result(msg: dict):
             })
             return
 
-        # 用句子在录音中的实际起始时刻生成字幕时间戳
-        # audio_start_time 是 epoch 秒，精确到采样帧级别
-        audio_start_time = msg.get("audio_start_time")
-        if audio_start_time:
-            ts_struct = time.localtime(audio_start_time)
-            subtitle_ts = time.strftime("%H:%M:%S", ts_struct)
-            # 相对于录音开始的偏移秒数，直接供前端播放器对齐使用
-            rec_start = getattr(G, "_rec_start_time", None)
-            mp3_offset_s = round(audio_start_time - rec_start, 3) if rec_start else None
-        else:
-            subtitle_ts  = time.strftime("%H:%M:%S")  # 兜底
-            mp3_offset_s = None
+        # ── 改进②: 第一步完成（仅矫正）→ 立即升级草稿，再发翻译任务 ──
+        if pending_meta and pending_meta.get("kind") == "correct":
+            draft_id    = pending_meta["draft_id"]
+            speaker_id  = pending_meta.get("speaker_id")
+            asr_task_id = pending_meta.get("asr_task_id")
 
-        # 取出说话人编号（来自 pending_meta）
-        speaker_id = (pending_meta or {}).get("speaker_id")
-        asr_task_id = (pending_meta or {}).get("asr_task_id")
+            # 更新 history 中的草稿记录
+            with G._history_lock:
+                for e in G.history:
+                    if str(e.get("id")) == str(draft_id):
+                        e["corrected"] = corrected
+                        e["language"]  = language
+                        e["llm_ms"]    = llm_ms
+                        e["draft"]     = True   # 仍是草稿，翻译还没来
+                        break
 
-        entry = {
-            "id":           int(time.time() * 1000),
-            "raw":          raw,
-            "corrected":    corrected,
-            "language":     language,
-            "translations": trans_cn,
-            "asr_ms":       asr_ms,
-            "llm_ms":       llm_ms,
-            "timestamp":    subtitle_ts,
-            "mp3_offset_s": mp3_offset_s,   # 句子在 MP3 里的精确起始秒（float）
-            "speaker_id":   speaker_id,     # 说话人编号（0-indexed，None 表示未识别）
-        }
-        _history_append(entry)
-        if speaker_id is None and asr_task_id is not None:
-            with G._spk_lock:
-                late_speaker = G._spk_results.pop(asr_task_id, _SPK_PENDING)
-                if late_speaker is _SPK_PENDING:
-                    G._spk_entry_pending[asr_task_id] = entry["id"]
-            if late_speaker not in (_SPK_PENDING, _SPK_NO_RESULT):
-                entry["speaker_id"] = late_speaker
-        # context 用 corrected 而不是 raw，让后续 LLM 纠错更准确
-        G.context.append(corrected or raw)
-        if len(G.context) > 12:
-            G.context = G.context[-12:]
-        broadcast_sync({"type": "entry", **entry})
+            # 说话人晚到处理
+            if speaker_id is None and asr_task_id is not None:
+                with G._spk_lock:
+                    late_speaker = G._spk_results.pop(asr_task_id, _SPK_PENDING)
+                    if late_speaker is _SPK_PENDING:
+                        G._spk_entry_pending[asr_task_id] = draft_id
+                if late_speaker not in (_SPK_PENDING, _SPK_NO_RESULT):
+                    speaker_id = late_speaker
+                    with G._history_lock:
+                        for e in G.history:
+                            if str(e.get("id")) == str(draft_id):
+                                e["speaker_id"] = speaker_id
+                                break
+
+            # context 用 corrected 追加，让后续纠错更准确
+            G.context.append(corrected or raw)
+            if len(G.context) > 12:
+                G.context = G.context[-12:]
+
+            # 推送"矫正完成，翻译中"的中间态给前端
+            broadcast_sync({
+                "type":        "entry_corrected",
+                "id":          draft_id,
+                "corrected":   corrected,
+                "language":    language,
+                "speaker_id":  speaker_id,
+                "asr_ms":      asr_ms,
+                "llm_ms":      llm_ms,
+            })
+
+            # 如果没有翻译目标，直接标记完成
+            tmap     = G.settings.get("translate_map", {})
+            langs_cn = G.settings.get("translate_to", [])
+            orig_en  = ASR_LANG_EN.get(language.lower(), "")
+            langs_en = [tmap.get(l, l) for l in langs_cn
+                        if tmap.get(l, l).lower() != orig_en.lower()]
+            if not langs_en:
+                with G._history_lock:
+                    for e in G.history:
+                        if str(e.get("id")) == str(draft_id):
+                            e["draft"] = False
+                            break
+                broadcast_sync({"type": "entry_finalized", "id": draft_id, "translations": {}})
+                return
+
+            # 发翻译任务（第二步）
+            prompt_trans = build_translation_prompt(corrected, language)
+            with G._task_id_lock:
+                G._task_id += 1
+                trans_tid = G._task_id
+            G._pending[trans_tid] = {
+                "raw":          raw,
+                "lang":         language,
+                "asr_ms":       asr_ms,
+                "draft_id":     draft_id,
+                "speaker_id":   speaker_id,
+                "kind":         "translate",   # 第二步：仅翻译
+                "_created_at":  time.time(),
+            }
+            G.worker.send({
+                "kind": "llm", "task_id": trans_tid,
+                "prompt": prompt_trans, "raw": corrected, "lang": language,
+                "asr_ms": asr_ms,
+            })
+            return
+
+        # ── 第二步完成（翻译）→ 最终化 entry ─────────────────────
+        if pending_meta and pending_meta.get("kind") == "translate":
+            draft_id   = pending_meta["draft_id"]
+            speaker_id = pending_meta.get("speaker_id")
+            if not trans_cn and out:
+                print(f"[LLM] 无翻译，out={json.dumps(out, ensure_ascii=False)[:200]}", flush=True)
+            with G._history_lock:
+                for e in G.history:
+                    if str(e.get("id")) == str(draft_id):
+                        e["translations"] = trans_cn
+                        e["llm_ms"]       = (e.get("llm_ms") or 0) + llm_ms
+                        e["draft"]        = False
+                        break
+            broadcast_sync({
+                "type":         "entry_finalized",
+                "id":           draft_id,
+                "translations": trans_cn,
+                "llm_ms":       llm_ms,
+            })
+            return
+
+        # ── 兜底：未知 kind，按原逻辑处理（向后兼容）────────────
+        print(f"[LLM] 未知 pending kind: {(pending_meta or {}).get('kind')}", flush=True)
 
 # ASR 语言代码 → 英文名（用于排除同语言翻译）
 ASR_LANG_EN = {
@@ -687,15 +799,86 @@ def build_retranslate_prompt(text: str) -> str:
         "<|im_start|>assistant\n"
     )
 
+def build_correction_prompt(raw: str, lang: str, ctx: list) -> str:
+    """第一步 LLM prompt：最小化 ASR 纠错，严格限制改写范围，防止幻觉。"""
+    ctx_str   = "\n".join(f"[{i+1}] {s}" for i, s in enumerate(ctx))
+    lang_enum = "|".join(sorted(v for v in set(ASR_LANG_EN.values()) if v))
+    ctx_prompt = G.settings.get("context_prompt", "").strip()[:MAX_CONTEXT_PROMPT_CHARS]
+    domain_line = (
+        f"Terminology reference (use ONLY to fix homophones): {ctx_prompt}\n"
+        if ctx_prompt else ""
+    )
+    raw_chars = len(raw)
+    # 允许的最大字符数变化：10%，至少允许±3个字符（处理标点）
+    max_delta = max(3, int(raw_chars * 0.10))
+    min_len   = max(1, raw_chars - max_delta)
+    max_len   = raw_chars + max_delta
+
+    return (
+        "<|im_start|>system\n"
+        "You are a minimal ASR error corrector. Your ONLY job is to fix clear ASR recognition mistakes.\n"
+        "STRICT RULES — violating any rule is WRONG:\n"
+        "1. Fix ONLY: homophones (同音字), obvious misheard words, missing/wrong punctuation at sentence end.\n"
+        "2. DO NOT rewrite, rephrase, expand, summarize, or improve the text in any way.\n"
+        "3. DO NOT add content that was not in the original speech.\n"
+        "4. DO NOT remove words unless they are clear ASR artifacts (e.g., repeated stutters like '的的的').\n"
+        f"5. Output length must stay within {min_len}–{max_len} characters (original: {raw_chars} chars).\n"
+        "6. If you are unsure whether something is an ASR error, leave it unchanged.\n"
+        "7. Keep the original language. Reply ONLY with valid JSON.\n"
+        f"{domain_line}"
+        "<|im_end|>\n"
+        "<|im_start|>user\n"
+        f"Recent context:\n{ctx_str or '(none)'}\n\n"
+        f"ASR output to correct ({lang}): \"{raw}\"\n\n"
+        "Return ONLY:\n"
+        "{\n"
+        "  \"corrected\": \"<minimally corrected text>\",\n"
+        f"  \"language\": \"<{lang_enum}>\"\n"
+        "}\n"
+        "/no_think<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+
+def build_translation_prompt(corrected: str, lang: str) -> str:
+    """第二步 LLM prompt：仅做翻译，输入已是矫正后文本。"""
+    tmap     = G.settings.get("translate_map", {})
+    langs_cn = G.settings.get("translate_to", [])
+    orig_en  = ASR_LANG_EN.get(lang.lower(), "")
+    langs_en = [tmap.get(l, l) for l in langs_cn
+                if tmap.get(l, l).lower() != orig_en.lower()]
+    if not langs_en:
+        return ""   # 无翻译目标，调用方不应发此 prompt
+
+    trans_lines = "".join(f'    "{l}": "<translation>",\n' for l in langs_en)
+    if trans_lines:
+        trans_lines = trans_lines.rstrip(",\n") + "\n"
+
+    return (
+        "<|im_start|>system\n"
+        "You are a multilingual translator. "
+        "Translate the given text into all requested languages. "
+        "Reply ONLY with valid JSON. No explanation, no markdown.\n"
+        "<|im_end|>\n"
+        "<|im_start|>user\n"
+        f"Source ({lang}): \"{corrected}\"\n\n"
+        "Return ONLY this JSON:\n"
+        "{\n"
+        f"  \"translations\": {{\n{trans_lines}  }}\n"
+        "}\n"
+        "/no_think<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+
 def build_llm_prompt(raw: str, lang: str, ctx: list) -> str:
+    """向后兼容入口（retranslate 仍用此函数，内部合并矫正+翻译）。"""
     tmap      = G.settings.get("translate_map", {})
     langs_cn  = G.settings.get("translate_to", [])
-    # 排除与识别语言相同的翻译目标
     orig_en   = ASR_LANG_EN.get(lang.lower(), "")
     langs_en  = [tmap.get(l, l) for l in langs_cn
                  if tmap.get(l, l).lower() != orig_en.lower()]
     ctx_str   = "\n".join(f"[{i+1}] {s}" for i, s in enumerate(ctx))
-    # 每种语言单独一行，避免 LLM 在 inline object 中截断翻译内容
     trans_lines = "".join(f'    "{l}": "<translation>",\n' for l in langs_en)
     if trans_lines:
         trans_lines = trans_lines.rstrip(",\n") + "\n"
@@ -703,17 +886,13 @@ def build_llm_prompt(raw: str, lang: str, ctx: list) -> str:
         f',\n  "translations": {{\n{trans_lines}  }}'
         if langs_en else ""
     )
-
     ctx_prompt = G.settings.get("context_prompt", "").strip()[:MAX_CONTEXT_PROMPT_CHARS]
     domain_instruction = (
         f"Domain context and terminology reference:\n{ctx_prompt}\n"
         "Use the above to improve correction accuracy for domain-specific terms.\n"
         if ctx_prompt else ""
     )
-
-    # 语言枚举从 ASR_LANG_EN 动态生成，排除空字符串（auto）
     lang_enum = "|".join(sorted(v for v in set(ASR_LANG_EN.values()) if v))
-
     return (
         "<|im_start|>system\n"
         "You are a multilingual ASR post-processor. "
@@ -852,8 +1031,11 @@ def _chunks_to_mp3_sync(chunks: list, path: str, bitrate: str = "192") -> bool:
             "-codec:a", "libmp3lame", "-b:a", f"{bitrate}k",
             path
         ]
-        proc = subprocess.run(cmd, input=pcm.tobytes(),
+        pcm_bytes = pcm.tobytes()
+        del audio, pcm   # 释放 float32/int16 数组，降低峰值内存
+        proc = subprocess.run(cmd, input=pcm_bytes,
                               capture_output=True, timeout=120)
+        del pcm_bytes
         if proc.returncode != 0:
             err = proc.stderr.decode(errors="replace")
             print(f"[录音] ffmpeg 错误：{err[:200]}", flush=True)
@@ -975,78 +1157,129 @@ def _history_load_all() -> list[dict]:
 
 
 # ─── VAD + 音频采集 ───────────────────────────────────────────
-def start_audio():
-    from silero_vad import load_silero_vad, VADIterator
-    s       = G.settings
-    vad_m   = load_silero_vad(onnx=True)
-    vad     = VADIterator(vad_m, threshold=s["vad_threshold"],
-                          sampling_rate=16000,
-                          min_silence_duration_ms=int(s["silence_s"]*1000))
-    CHUNK   = 512
-    SIL_TH  = max(1, round(s["silence_s"]*16000/CHUNK))
-    MAX_FR  = round(s["max_sentence_s"]*16000/CHUNK)
-    PRE_FR  = max(1, round(PRE_ROLL_SECONDS*16000/CHUNK))
+
+# ─── 改进③: 公共音频回调工厂 ────────────────────────────────
+# 原 start_audio / _resume_audio 各自定义了一份几乎完全相同的 cb() + flush_vad()，
+# 现提取为工厂函数，两处共用，同时修复 start_audio 中缺少 _paused 检查的 bug。
+#
+# 改进④: 中日文短句合并逻辑
+# 中日文停顿短，VAD 容易把一句话切成两段。
+# 当识别语言为中文/日文，且 buf 内容估算 token 数 < MIN_CJK_CHARS 时，
+# 不立即 flush，等待下一段合并（最多等 MAX_MERGE_WAIT_S 秒）。
+
+MIN_CJK_CHARS    = 8    # 少于此字符数的中日文片段尝试与下一段合并
+MAX_MERGE_WAIT_S = 3.0  # 最多等待此时长后强制 flush（防止无限挂起）
+
+def _make_audio_callback(vad, s: dict, sentence_start_frames: list):
+    """
+    返回 (flush_vad, cb) 两个函数，共享 buf/pre_roll/speaking/sil_cnt 状态。
+    sentence_start_frames: 长度为 1 的列表，调用方持有引用以读取起始帧。
+    """
+    CHUNK  = 512
+    SIL_TH = max(1, round(s["silence_s"] * 16000 / CHUNK))
+    MAX_FR = round(s["max_sentence_s"] * 16000 / CHUNK)
+    PRE_FR = max(1, round(PRE_ROLL_SECONDS * 16000 / CHUNK))
+
     buf: list[np.ndarray] = []
-    pre_roll = collections.deque(maxlen=PRE_FR)
-    sil_cnt = [0]; speaking = [False]
-    _level_tick = [0]   # 节流计数器：每 2 次回调广播一次音量（≈15 fps）
+    pre_roll  = collections.deque(maxlen=PRE_FR)
+    sil_cnt   = [0]
+    speaking  = [False]
+    _level_tick = [0]
 
-    # 初始化分段录音
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    downloads = Path.home() / "Downloads"
-    downloads.mkdir(exist_ok=True)
-    G._rec_final_path  = str(downloads / f"ASRLive_{ts}.mp3")
-    G._rec_session_dir = str(downloads / f".asrlive_tmp_{ts}")
-    os.makedirs(G._rec_session_dir, exist_ok=True)
-    G._rec_chunks       = []
-    G._rec_frames       = 0
-    G._rec_segments     = []
-    G._rec_start_time   = time.time()   # 录音启动的精确 epoch 时间
-    G._rec_frames_total = 0             # 累计所有已收到的采样帧数
-    _history_init()
-    print(f"[录音] 开始分段录制，最终输出 → {G._rec_final_path}", flush=True)
+    # ── 改进④: 中日文短句合并缓冲 ──────────────────────────
+    _pending_merge: list[np.ndarray] = []    # 等待合并的前一段音频
+    _pending_merge_ts = [0.0]                # 前一段的 audio_start_time
+    _pending_merge_at = [0.0]                # 进入缓冲时的 wall time（超时用）
 
-    # 追踪当前 VAD 句子的起始帧（相对录音开始，单位：采样点）
-    sentence_start_frames = [0]
+    def _try_dispatch(audio: np.ndarray, audio_start_time: float):
+        """判断是否需要与前段合并，再决定是否送 ASR 队列。"""
+        nonlocal _pending_merge
+        # 估算字符数：中日文约 2 token/字，用时长粗估
+        # 实际帧数 / 16000 = 秒数，中日文约 5字/秒
+        dur_s      = len(audio) / 16000.0
+        asr_lang   = s.get("asr_language") or ""
+        is_cjk     = asr_lang in ("zh", "chinese", "ja", "japanese", "")
+        est_chars  = dur_s * 5   # 粗估字数
+
+        if is_cjk and est_chars < MIN_CJK_CHARS:
+            # 本段太短：先存入合并缓冲
+            if _pending_merge:
+                # 已有待合并段，拼接后一起发
+                merged = np.concatenate(_pending_merge + [audio])
+                _pending_merge.clear()
+                ts = _pending_merge_ts[0]
+                print(f"[VAD] 中日文短句合并 ({dur_s:.2f}s) → 合计 {len(merged)/16000:.2f}s", flush=True)
+                _queue_drop_oldest(G.asr_queue, (merged, ts))
+            else:
+                _pending_merge.extend([audio])
+                _pending_merge_ts[0]  = audio_start_time
+                _pending_merge_at[0]  = time.monotonic()
+                print(f"[VAD] 中日文短句缓冲 ({dur_s:.2f}s)，等待下段合并", flush=True)
+        else:
+            # 本段够长：如果有待合并段，先把它接上
+            if _pending_merge:
+                merged = np.concatenate(_pending_merge + [audio])
+                _pending_merge.clear()
+                ts = _pending_merge_ts[0]
+                print(f"[VAD] 中日文合并完成 → {len(merged)/16000:.2f}s", flush=True)
+                _queue_drop_oldest(G.asr_queue, (merged, ts))
+            else:
+                _queue_drop_oldest(G.asr_queue, (audio, audio_start_time))
+
+    def _flush_pending_merge():
+        """超时后强制发送待合并缓冲（防止最后一段挂起）。"""
+        if _pending_merge:
+            audio = np.concatenate(_pending_merge)
+            _pending_merge.clear()
+            if len(audio) / 16000 >= MIN_ASR_SECONDS:
+                _queue_drop_oldest(G.asr_queue, (audio, _pending_merge_ts[0]))
 
     def flush_vad():
-        if not buf: return
+        if not buf:
+            return
         audio = np.concatenate(buf)
-        if len(audio)/16000 >= MIN_ASR_SECONDS:
-            # 句子开始时刻 = 录音启动时刻 + 句子起始帧 / 采样率
+        if len(audio) / 16000 >= MIN_ASR_SECONDS:
             audio_start_time = G._rec_start_time + sentence_start_frames[0] / 16000.0
-            _queue_drop_oldest(G.asr_queue, (audio, audio_start_time))
-        buf.clear(); sil_cnt[0]=0; speaking[0]=False; vad.reset_states()
-        # 记录下一句的起始帧
+            _try_dispatch(audio, audio_start_time)
+        # 超时检查：如果合并缓冲滞留超过 MAX_MERGE_WAIT_S，强制发出
+        if _pending_merge and (time.monotonic() - _pending_merge_at[0]) > MAX_MERGE_WAIT_S:
+            _flush_pending_merge()
+        buf.clear()
+        sil_cnt[0]  = 0
+        speaking[0] = False
+        vad.reset_states()
         sentence_start_frames[0] = G._rec_frames_total
 
     def cb(indata, frames, t_, status_):
-        if not G.recording: return
-        chunk = indata[:,0].copy().astype(np.float32)
-        # ── 软件增益（防止削波，硬限幅在 ±1.0）────────────────
+        # ── 改进③: 统一在此检查 _paused，原 start_audio 版本缺此检查 ──
+        if not G.recording or G._paused:
+            return
+        chunk = indata[:, 0].copy().astype(np.float32)
+
+        # 软件增益
         gain = float(G.settings.get("mic_gain", 1.5))
         if gain != 1.0:
             chunk = np.clip(chunk * gain, -1.0, 1.0)
         G._rec_frames_total += len(chunk)
 
-        # ── 实时音量广播（节流：每 2 帧一次，≈15 fps）──────────
+        # 实时音量广播（节流：每 2 帧一次，≈15 fps）
         _level_tick[0] += 1
         if _level_tick[0] >= 2:
             _level_tick[0] = 0
             rms = float(np.sqrt(np.mean(chunk ** 2)))
             broadcast_sync({"type": "audio_level", "rms": rms})
 
-        # ── 分段录音累积 ──────────────────────────────────────
+        # 分段录音累积
         if G.settings.get("save_recording", True):
             G._rec_chunks.append(chunk)
             G._rec_frames += len(chunk)
-            # 达到分段阈值时在后台线程写盘，不阻塞音频回调
             if G._rec_frames >= SEGMENT_FRAMES:
-                # 修复内存泄漏：追加前先清理已结束的线程引用
                 G._flush_threads = [t for t in G._flush_threads if t.is_alive()]
-                _ft=threading.Thread(target=_flush_segment,daemon=True); G._flush_threads.append(_ft); _ft.start()
+                _ft = threading.Thread(target=_flush_segment, daemon=True)
+                G._flush_threads.append(_ft)
+                _ft.start()
 
-        # ── VAD ──────────────────────────────────────────────
+        # VAD
         ev = vad(chunk, return_seconds=False)
         if ev:
             if "start" in ev:
@@ -1056,23 +1289,55 @@ def start_audio():
                         G._rec_frames_total - len(chunk) - sum(len(c) for c in pre_roll)
                     )
                     buf.extend(c.copy() for c in pre_roll)
-                speaking[0]=True; sil_cnt[0]=0
-            if "end"   in ev: flush_vad(); return
+                speaking[0] = True
+                sil_cnt[0]  = 0
+            if "end" in ev:
+                flush_vad()
+                return
         if speaking[0]:
-            buf.append(chunk); sil_cnt[0]=0
-            if len(buf)>=MAX_FR: flush_vad()
+            buf.append(chunk)
+            sil_cnt[0] = 0
+            if len(buf) >= MAX_FR:
+                flush_vad()
         elif buf:
-            sil_cnt[0]+=1; buf.append(chunk)
-            if sil_cnt[0]>=SIL_TH: flush_vad()
+            sil_cnt[0] += 1
+            buf.append(chunk)
+            if sil_cnt[0] >= SIL_TH:
+                flush_vad()
         else:
             pre_roll.append(chunk)
 
-    G._stream = sd.InputStream(samplerate=16000, blocksize=CHUNK,
-                                channels=1, dtype="float32",
-                                device=s.get("input_device"), callback=cb)
+    return flush_vad, cb, _flush_pending_merge
 
-    # PortAudio -9986 (Internal PortAudio error / Audio Hardware Not Running)
-    # 常见于蓝牙设备切换或 CoreAudio 刚唤醒，自动重试最多 3 次
+
+def _validate_device(device_id) -> object:
+    """检查设备 ID 是否可用，不可用时返回 None（系统默认）。"""
+    if device_id is None:
+        return None
+    try:
+        sd.query_devices(device_id)
+        return device_id
+    except Exception:
+        print(
+            f"[录音] 设备 {device_id} 不可用（已拔出或 ID 变更），回退到系统默认麦克风",
+            flush=True,
+        )
+        broadcast_sync({
+            "type": "error",
+            "msg":  f"麦克风设备 {device_id} 不可用，已自动切换到系统默认设备。如需指定设备，请在设置中重新选择。",
+        })
+        return None
+
+
+def _start_stream_with_retry(cb, s: dict) -> bool:
+    """创建 InputStream 并重试最多 3 次，成功返回 True，失败返回 False。"""
+    CHUNK = 512
+    device = _validate_device(s.get("input_device"))
+    G._stream = sd.InputStream(
+        samplerate=16000, blocksize=CHUNK,
+        channels=1, dtype="float32",
+        device=device, callback=cb,
+    )
     last_err = None
     for attempt in range(3):
         try:
@@ -1083,30 +1348,65 @@ def start_audio():
             last_err = e
             wait = 0.8 * (attempt + 1)
             print(f"[录音] 启动音频流失败（第{attempt+1}次），{wait:.1f}s 后重试… {e}", flush=True)
-            try: G._stream.stop(); G._stream.close()
-            except Exception: pass
+            try:
+                G._stream.stop()
+                G._stream.close()
+            except Exception:
+                pass
             time.sleep(wait)
-            # 重新创建流对象（CoreAudio 需要全新实例才能恢复）
-            G._stream = sd.InputStream(samplerate=16000, blocksize=CHUNK,
-                                       channels=1, dtype="float32",
-                                       device=s.get("input_device"), callback=cb)
+            G._stream = sd.InputStream(
+                samplerate=16000, blocksize=CHUNK,
+                channels=1, dtype="float32",
+                device=device, callback=cb,
+            )
     if last_err:
         G._stream = None
+        return False
+    return True
+
+
+def start_audio():
+    from silero_vad import load_silero_vad, VADIterator
+    s     = G.settings
+    vad_m = load_silero_vad(onnx=True)
+    vad   = VADIterator(vad_m, threshold=s["vad_threshold"],
+                        sampling_rate=16000,
+                        min_silence_duration_ms=int(s["silence_s"] * 1000))
+
+    # 初始化分段录音
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    downloads = Path.home() / "Downloads"
+    downloads.mkdir(exist_ok=True)
+    G._rec_final_path   = str(downloads / f"ASRLive_{ts}.mp3")
+    G._rec_session_dir  = str(downloads / f".asrlive_tmp_{ts}")
+    os.makedirs(G._rec_session_dir, exist_ok=True)
+    G._rec_chunks       = []
+    G._rec_frames       = 0
+    G._rec_segments     = []
+    G._rec_start_time   = time.time()
+    G._rec_frames_total = 0
+    _history_init()
+    print(f"[录音] 开始分段录制，最终输出 → {G._rec_final_path}", flush=True)
+
+    sentence_start_frames = [0]
+    _, cb, _ = _make_audio_callback(vad, s, sentence_start_frames)
+
+    ok = _start_stream_with_retry(cb, s)
+    if not ok:
         G.recording = False
-        # 清理已创建的临时目录（没有任何分段数据）
         if G._rec_session_dir and os.path.exists(G._rec_session_dir):
             import shutil
             shutil.rmtree(G._rec_session_dir, ignore_errors=True)
         G._rec_session_dir = None
         G._rec_final_path  = None
         G._rec_segments    = []
-        errmsg = (f"无法启动麦克风（PortAudio 错误）：{last_err}\n"
-                  f"请检查：① 麦克风权限 ② 蓝牙设备是否就绪 ③ 在系统设置中切换一次输入设备后重试")
+        errmsg = (
+            f"无法启动麦克风（PortAudio 错误）\n"
+            f"请检查：① 麦克风权限 ② 蓝牙设备是否就绪 ③ 在系统设置中切换一次输入设备后重试"
+        )
         print(f"[录音] 放弃：{errmsg}", flush=True)
-        # 通知前端恢复 UI 到停止状态
         broadcast_sync({"type": "recording", "value": False})
         broadcast_sync({"type": "error",     "msg":   errmsg})
-
 
 def stop_audio():
     if G._stream:
@@ -1138,6 +1438,13 @@ def stop_audio():
     # 修复内存泄漏：写盘后确保引用被释放
     G._rec_chunks = []
     G._rec_frames = 0
+    # 清理本次录音的 history JSONL 临时文件（已全量载入内存或写入 .asr，不需要保留）
+    if G._history_file and os.path.exists(G._history_file):
+        try:
+            os.remove(G._history_file)
+        except Exception:
+            pass
+        G._history_file = None
 
     if G._rec_segments and G._rec_final_path:
         segments    = list(G._rec_segments)
@@ -1181,101 +1488,21 @@ def stop_audio():
 def _resume_audio():
     """暂停后继续：复用当前 session 目录，重启麦克风流追加分段"""
     from silero_vad import load_silero_vad, VADIterator
-    s       = G.settings
-    vad_m   = load_silero_vad(onnx=True)
-    vad     = VADIterator(vad_m, threshold=s["vad_threshold"],
-                          sampling_rate=16000,
-                          min_silence_duration_ms=int(s["silence_s"]*1000))
-    CHUNK   = 512
-    SIL_TH  = max(1, round(s["silence_s"]*16000/CHUNK))
-    MAX_FR  = round(s["max_sentence_s"]*16000/CHUNK)
-    PRE_FR  = max(1, round(PRE_ROLL_SECONDS*16000/CHUNK))
-    buf: list[np.ndarray] = []
-    pre_roll = collections.deque(maxlen=PRE_FR)
-    sil_cnt = [0]; speaking = [False]
-    _level_tick = [0]   # 节流计数器：每 2 次回调广播一次音量（≈15 fps）
+    s     = G.settings
+    vad_m = load_silero_vad(onnx=True)
+    vad   = VADIterator(vad_m, threshold=s["vad_threshold"],
+                        sampling_rate=16000,
+                        min_silence_duration_ms=int(s["silence_s"] * 1000))
 
     # 继续使用现有 session，不重置 _rec_segments / _rec_final_path
-    # _rec_chunks / _rec_frames 已在 pause handler 中清零并写盘，无需再清
-    # _rec_start_time / _rec_frames_total 保持不变，继续累计
-    G._rec_chunks = []   # 确保干净（防御性清零）
+    G._rec_chunks = []
     G._rec_frames = 0
     print(f"[录音] 继续录制，已有 {len(G._rec_segments)} 个分段，session → {G._rec_session_dir}", flush=True)
 
     sentence_start_frames = [G._rec_frames_total]
+    _, cb, _ = _make_audio_callback(vad, s, sentence_start_frames)
 
-    def flush_vad():
-        if not buf: return
-        audio = np.concatenate(buf)
-        if len(audio)/16000 >= MIN_ASR_SECONDS:
-            audio_start_time = G._rec_start_time + sentence_start_frames[0] / 16000.0
-            _queue_drop_oldest(G.asr_queue, (audio, audio_start_time))
-        buf.clear(); sil_cnt[0]=0; speaking[0]=False; vad.reset_states()
-        sentence_start_frames[0] = G._rec_frames_total
-
-    def cb(indata, frames, t_, status_):
-        if not G.recording or G._paused: return
-        chunk = indata[:,0].copy().astype(np.float32)
-        # ── 软件增益（防止削波，硬限幅在 ±1.0）────────────────
-        gain = float(G.settings.get("mic_gain", 1.5))
-        if gain != 1.0:
-            chunk = np.clip(chunk * gain, -1.0, 1.0)
-        G._rec_frames_total += len(chunk)
-
-        # ── 实时音量广播（节流：每 2 帧一次，≈15 fps）──────────
-        _level_tick[0] += 1
-        if _level_tick[0] >= 2:
-            _level_tick[0] = 0
-            rms = float(np.sqrt(np.mean(chunk ** 2)))
-            broadcast_sync({"type": "audio_level", "rms": rms})
-
-        if G.settings.get("save_recording", True):
-            G._rec_chunks.append(chunk)
-            G._rec_frames += len(chunk)
-            if G._rec_frames >= SEGMENT_FRAMES:
-                G._flush_threads = [t for t in G._flush_threads if t.is_alive()]
-                _ft=threading.Thread(target=_flush_segment,daemon=True); G._flush_threads.append(_ft); _ft.start()
-        ev = vad(chunk, return_seconds=False)
-        if ev:
-            if "start" in ev:
-                if not speaking[0] and not buf and pre_roll:
-                    sentence_start_frames[0] = max(
-                        0,
-                        G._rec_frames_total - len(chunk) - sum(len(c) for c in pre_roll)
-                    )
-                    buf.extend(c.copy() for c in pre_roll)
-                speaking[0]=True; sil_cnt[0]=0
-            if "end"   in ev: flush_vad(); return
-        if speaking[0]:
-            buf.append(chunk); sil_cnt[0]=0
-            if len(buf)>=MAX_FR: flush_vad()
-        elif buf:
-            sil_cnt[0]+=1; buf.append(chunk)
-            if sil_cnt[0]>=SIL_TH: flush_vad()
-        else:
-            pre_roll.append(chunk)
-
-    def _try_start_stream(stream_obj):
-        """尝试启动流，失败时自动重试，返回 (success, stream)"""
-        last_err = None
-        for attempt in range(3):
-            try:
-                stream_obj.start()
-                return True, stream_obj
-            except sd.PortAudioError as e:
-                last_err = e
-                wait = 0.8 * (attempt + 1)
-                print(f"[录音] resume 启动失败（第{attempt+1}次），{wait:.1f}s 后重试… {e}", flush=True)
-                try: stream_obj.stop(); stream_obj.close()
-                except Exception: pass
-                time.sleep(wait)
-                stream_obj = sd.InputStream(samplerate=16000, blocksize=CHUNK,
-                                            channels=1, dtype="float32",
-                                            device=s.get("input_device"), callback=cb)
-        return False, None
-
-    # 修复 #6：始终关闭旧流并重新创建，避免 stop() 后未 close() 的流
-    # 在蓝牙/CoreAudio 切换后直接 start() 导致静默失败（UI 显示录音中但实际已停止）。
+    # 始终关闭旧流再重新创建，避免 CoreAudio/蓝牙切换后静默失败
     if G._stream:
         try:
             G._stream.stop()
@@ -1287,11 +1514,7 @@ def _resume_audio():
             pass
         G._stream = None
 
-    new_s = sd.InputStream(samplerate=16000, blocksize=CHUNK,
-                           channels=1, dtype="float32",
-                           device=s.get("input_device"), callback=cb)
-    ok, new_stream = _try_start_stream(new_s)
-    G._stream = new_stream if ok else None
+    ok = _start_stream_with_retry(cb, s)
     if not ok:
         G.recording = False
         broadcast_sync({"type": "recording", "value": False})
@@ -1482,6 +1705,7 @@ def create_app() -> FastAPI:
                 t.join(timeout=10)
             # 把暂停前缓冲的音频写盘，保留到 _rec_segments
             if G._rec_chunks and G._rec_session_dir:
+                G._flush_threads = [t for t in G._flush_threads if t.is_alive()]
                 ft = threading.Thread(target=_flush_segment, daemon=True)
                 G._flush_threads.append(ft)
                 ft.start()
@@ -1517,6 +1741,14 @@ def create_app() -> FastAPI:
             await asyncio.to_thread(ensure_model_worker, True)
             await _broadcast({"type": "settings", "settings": G.settings})
         elif act == "clear":
+            # 若正在录音/暂停，先完整走停止流程，再清空
+            # 否则 _rec_session_dir 会被 rmtree 掉，stop_audio 无法写盘，
+            # _save_thread 不启动，rec_saved 永不来，前端 recState 卡在 'merging'
+            if G.recording or getattr(G, "_paused", False):
+                G.recording = False
+                G._paused   = False
+                stop_audio()
+                await _broadcast({"type": "recording", "value": False})
             _speaker_tracker.reset()   # 清空时重置说话人状态
             with G._spk_lock:
                 G._spk_results.clear()
@@ -1528,7 +1760,7 @@ def create_app() -> FastAPI:
                 try: os.remove(G._history_file)
                 except Exception: pass
             G.context.clear()
-            # 清空临时分段目录（录音已完成，临时文件可删）
+            # 清空临时分段目录（录音已完成或已被 stop_audio 处理，临时文件可删）
             if G._rec_session_dir and os.path.isdir(G._rec_session_dir):
                 try:
                     import shutil
@@ -1571,10 +1803,18 @@ def create_app() -> FastAPI:
             _save_file_dialog(filename, file_content, ws)
 
         elif act == "save_session":
+            # 如果 MP3 合并线程仍在运行（刚停止录音），等待其完成再取路径
+            if G._save_thread and G._save_thread.is_alive():
+                await ws.send_json({"type": "status_msg",
+                                    "text": "正在等待录音保存完成…"})
+                await asyncio.to_thread(G._save_thread.join, 30)
+                if G._save_thread.is_alive():
+                    await ws.send_json({"type": "status_msg",
+                                        "text": "录音保存超时，MP3 路径可能为空"})
             # 构建完整 .asr 会话文件（JSON）
             entries = _history_load_all()
             session = {
-                "version": "4.4l",
+                "version": "4.6a",
                 "saved_at":     time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "mp3_filename": G._rec_mp3_final or None,  # 录音 MP3 路径（如已保存）
                 "settings":     {k: v for k, v in G.settings.items()
@@ -1637,7 +1877,7 @@ def create_app() -> FastAPI:
                     G._task_id += 1
                     tid = G._task_id
                 G._pending[tid] = {"entry_id": entry_id, "corrected": new_text,
-                                   "ws": ws, "kind": "retranslate",
+                                   "kind": "retranslate",
                                    "_created_at": time.time()}
                 G.worker.send({
                     "kind": "llm", "task_id": tid,
@@ -1680,10 +1920,21 @@ def _save_file_dialog(filename: str, file_content: str, ws):
             import webview as _wv
             wins = _wv.windows
             if wins:
+                # 根据文件扩展名推断 file_types 过滤器
+                ext = os.path.splitext(filename)[1].lower()
+                _file_types_map = {
+                    ".asr":  "ASR 会话文件 (*.asr)",
+                    ".txt":  "文本文件 (*.txt)",
+                    ".srt":  "SRT 字幕文件 (*.srt)",
+                    ".json": "JSON 文件 (*.json)",
+                    ".md":   "Markdown 文件 (*.md)",
+                }
+                ft = _file_types_map.get(ext, f"文件 (*{ext})")
                 save_path = wins[0].create_file_dialog(
                     _wv.SAVE_DIALOG,
                     directory=str(Path.home() / "Downloads"),
                     save_filename=filename,
+                    file_types=(ft, "所有文件 (*.*)"),
                 )
                 if save_path:
                     # create_file_dialog 返回 tuple 或 str

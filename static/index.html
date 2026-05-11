@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lancer1911 ASR Live v4.4l</title>
+<title>Lancer1911 ASR Live v4.6a</title>
 <script>
 /**
  * Lancer1911 ASR Live – UI language strings
@@ -92,6 +92,9 @@ const I18N = {
     /* ── subtitle area ── */
     emptyHint:          '点击「开始识别」<br>开始实时语音转写',
     liveProcessing:     'LLM 处理中…',
+    draftCorrecting:    '矫正中…',
+    draftTranslating:   '翻译中…',
+    svNoPromptWarn:     '⚠️ SenseVoice 不支持场景术语提示词，ASR 识别准确率可能下降',
 
     /* ── player bar ── */
     merging:            '正在合并录音…',
@@ -209,6 +212,7 @@ const I18N = {
     bannerDiscarded:    '✗ 放弃保存',
     toastSaved:         '已保存：{name}',
     toastRecSaved:      '录音已保存：{name}{size}',
+    toastNotSaved:      '已取消，未保存',
     scanFailed:         '扫描失败',
 
     /* ── download guide ── */
@@ -312,6 +316,9 @@ const I18N = {
     /* ── subtitle area ── */
     emptyHint:          'Click "Start ASR"<br>to begin live transcription',
     liveProcessing:     'LLM processing…',
+    draftCorrecting:    'Correcting…',
+    draftTranslating:   'Translating…',
+    svNoPromptWarn:     '⚠️ SenseVoice does not support scene/term prompts — ASR accuracy may be lower',
 
     /* ── player bar ── */
     merging:            'Merging audio…',
@@ -429,6 +436,7 @@ const I18N = {
     bannerDiscarded:    '✗ Discarded',
     toastSaved:         'Saved: {name}',
     toastRecSaved:      'Recording saved: {name}{size}',
+    toastNotSaved:      'Cancelled, not saved',
     scanFailed:         'Scan failed',
 
     /* ── download guide ── */
@@ -578,6 +586,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 .ent.en{border-left:2.5px solid var(--en)}
 .ent.ja{border-left:2.5px solid var(--ja)}
 .ent.live{border:0.5px solid rgba(0,200,150,.3);border-left:2.5px solid var(--ac)}
+/* ── 改进①: 三阶段草稿态样式 ── */
+.ent.draft{opacity:.82}
+.ent.draft .orig{color:var(--tx)}
+.draft-badge{display:inline-flex;align-items:center;gap:4px;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;padding:2px 7px;border-radius:3px;background:rgba(255,255,255,.06);border:0.5px solid var(--b2);color:var(--hi);white-space:nowrap}
+.draft-badge.correcting::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--hi);animation:pulse-dot .9s ease-in-out infinite}
+.draft-badge.translating::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ac);animation:pulse-dot .9s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
 .eHead{display:flex;align-items:center;gap:7px;padding:7px 12px 6px;border-bottom:0.5px solid var(--b1)}
 .badge{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:13px;letter-spacing:.07em;padding:2px 7px;border-radius:3px;font-weight:500}
 .badge.zh{background:rgba(232,184,75,.11);color:#b8902a;border:0.5px solid rgba(232,184,75,.2)}
@@ -644,8 +659,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
   background:var(--bg2);border:0.5px solid var(--ac);border-radius:8px;
   padding:10px 18px;font-size:15px;color:var(--ac);
   font-family:ui-monospace,'SF Mono',Menlo,monospace;
-  opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;}
+  opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:9999;white-space:nowrap;
+  backdrop-filter:none;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok {background:#0d2318;border-color:rgba(52,211,153,.6);color:#34d399;}
+.toast.warn{background:#221208;border-color:rgba(220,100,60,.5);color:#e07050;}
 .hl{background:rgba(255,210,0,.35);border-radius:2px;padding:0 1px;color:inherit}
 :root.light .hl{background:rgba(255,160,0,.3)}
 .sw-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -764,7 +782,7 @@ select:focus,.si:focus{border-color:rgba(0,200,150,.35)}
 
 <!-- topbar -->
 <div class="top">
-  <div class="brand">LANCER1911<em>/</em>ASR LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.4l</span></div>
+  <div class="brand">LANCER1911<em>/</em>ASR LIVE <span style="font-size:10px;color:var(--hi);letter-spacing:.05em">v4.6a</span></div>
   <div class="tmid">
     <div class="dot" id="DOT"></div>
     <span class="tst" id="TST"></span>
@@ -1299,13 +1317,17 @@ let _modelReady = false;  // true only after server sends {ready:true}
 let _recStartWallMs = null;
 
 let _toastTimer;
-function showToast(msg){
+function showToast(msg, type){
+  // type: 'ok'=绿色(保存成功) | 'warn'=浅红(未保存/取消) | 默认=原色
   let t = _el('TOAST');
   if(!t){ t=document.createElement('div'); t.id='TOAST'; t.className='toast'; document.body.appendChild(t); }
   t.textContent = msg;
+  t.classList.remove('ok','warn');
+  if(type==='ok')   t.classList.add('ok');
+  if(type==='warn') t.classList.add('warn');
   t.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(()=>t.classList.remove('show'), 4000);
+  _toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, 4000);
 }
 
 // ── Theme SVG icons ───────────────────────────────────────────
@@ -1377,16 +1399,22 @@ function handle(m){
     updateSpkStatus(m.available, m.active, m.error);
   }
   else if(m.type==='speaker_id_updated'){
-    // Another client corrected a speaker — sync our DOM
     const card = document.querySelector(`.ent[data-id="${m.entry_id}"]`);
     if(card && m.speaker_id != null){
       card.dataset.spkId = m.speaker_id;
       const badge = card.querySelector('.spk-badge');
       if(badge){
+        // 已有badge：更新内容
         badge.className = `spk-badge ${spkClass(m.speaker_id)}`;
         badge.dataset.spk = m.speaker_id;
         badge.textContent = spkLabel(m.speaker_id);
         badge.onclick = (e) => openSpkDrop(e, m.speaker_id, m.entry_id);
+      } else {
+        // 无badge（发言人晚于卡片到达）：插入到badge语言标签后面
+        const langBadge = card.querySelector('.badge');
+        if(langBadge){
+          langBadge.insertAdjacentHTML('afterend', spkBadgeHtml(m.speaker_id, m.entry_id));
+        }
       }
     }
     renderSpkList();
@@ -1403,9 +1431,34 @@ function handle(m){
     renderSpkList();
   }
   else if(m.type==='asr_partial') showLive(m.raw, m.lang, m.asr_ms);
+  // ── 改进①: 三阶段渐进显示 ──────────────────────────────────────
+  // entry_draft    → ASR完成后立即显示raw文本（草稿态，灰色指示器）
+  // entry_corrected→ LLM矫正完成，原文升级为corrected，显示"翻译中…"
+  // entry_finalized→ 翻译完成，填入翻译，移除等待指示器
+  else if(m.type==='entry_draft'){
+    removeLive();
+    addEntryDraft(m);
+    updateMetrics(m.asr_ms||0, 0);   // 立即显示真实ASR时滞，LLM还未完成
+  }
+  else if(m.type==='entry_corrected'){
+    applyEntryCorrection(m);
+    updateMetrics(m.asr_ms||0, m.llm_ms||0);  // 矫正完成，显示ASR+矫正耗时
+  }
+  else if(m.type==='entry_finalized'){
+    applyEntryFinalized(m);
+    // 翻译完成：从卡片读取ASR时滞，加上本次翻译耗时
+    const card = document.querySelector(`.ent[data-id="${m.id}"]`);
+    const latEl = card && card.querySelector('.elat');
+    const asrMs = latEl ? parseInt(latEl.textContent.match(/ASR\s*(\d+)/)?.[1]||0) : 0;
+    updateMetrics(asrMs, m.llm_ms||0);
+  }
+  // 兼容旧的 entry 消息（加载历史会话时使用）
   else if(m.type==='entry'){ removeLive(); addEntry(m); updateMetrics(m.asr_ms, m.llm_ms); }
   else if(m.type==='entry_updated'){ applyEntryUpdate(m); }
   else if(m.type==='cleared'){
+    // 清空后强制回到 idle（录音中清空时 recState 可能卡在 merging/recording/paused）
+    if(recState !== 'idle' && recState !== 'ready') recState = 'idle';
+    _applyRecUI();
     SC.innerHTML = `<div class="empty" id="HINT">${T('emptyHint')}</div>`;
     sentCnt=0; charCnt=0; MC.textContent='0'; MCH.textContent='0';
     // Reset speaker names
@@ -1442,16 +1495,21 @@ function handle(m){
   }
   else if(m.type==='settings'){ G.settings=m.settings; applySettings(m.settings); applyAsrLangUI(m.settings.asr_language||null); }
   else if(m.type==='save_done'){
-    showToast(T('toastSaved').replace('{name}', m.path.split('/').pop()));
+    showToast(T('toastSaved').replace('{name}', m.path.split('/').pop()), 'ok');
     _markSaved();
     window.dispatchEvent(new Event('_save_done'));
   }
-  else if(m.type==='save_cancelled'){}
+  else if(m.type==='save_cancelled'){
+    showToast(T('toastNotSaved')||'未保存', 'warn');
+  }
+  else if(m.type==='status_msg'){
+    showToast(m.text, 'info');
+  }
   else if(m.type.startsWith('dl_')) handleDlMsg(m);
   else if(m.type==='rec_saved'){
     const name = m.path.split('/').pop();
     const size = m.size_mb ? ` (${m.size_mb}MB)` : '';
-    showToast(T('toastRecSaved').replace('{name}', name).replace('{size}', size));
+    showToast(T('toastRecSaved').replace('{name}', name).replace('{size}', size), 'ok');
     playerLoad('/rec_file?path='+encodeURIComponent(m.path));
   }
   else if(m.type==='rec_segment'){
@@ -1508,6 +1566,12 @@ function _applyRecUI(){
   if(settBtn){
     settBtn.disabled = isRec || isPaus;
     settBtn.title = (isRec||isPaus) ? T('settingsDisabled') : '';
+  }
+  // 录音中/暂停时禁用保存会话按钮（MP3 尚未保存，asr 文件中路径会为空）
+  const saveBtn = _el('SAVESESSIONBTN');
+  if(saveBtn){
+    saveBtn.disabled = isRec || isPaus;
+    saveBtn.title = (isRec||isPaus) ? T('saveDisabledRecording') : 'Save session (.asr)';
   }
   const busy = isRec || isPaus;
   ['SLIDER_SILENCE','SLIDER_VAD','SLIDER_GAIN'].forEach(id=>{
@@ -1668,6 +1732,24 @@ async function _doLoadSessionPick(){
   if(MC) MC.textContent='0';
   if(MCH) MCH.textContent='0';
   _markSaved();
+  // pywebview 模式：通过 js_api 弹原生打开对话框（带 *.asr 过滤）
+  if(window.pywebview && window.pywebview.api){
+    try{
+      const result = await window.pywebview.api.open_file();
+      if(!result || result.cancelled) return;
+      if(!result.ok){ alert(result.error || 'Failed to open file'); return; }
+      const content = result.content;
+      try{
+        const parsed = JSON.parse(content);
+        if(!Array.isArray(parsed.entries)){ alert(T('sessionLoadErr')); return; }
+      } catch(_){ alert(T('sessionLoadErr')); return; }
+      send({ action: 'load_session', content });
+    } catch(e){
+      alert('打开文件失败: ' + e.message);
+    }
+    return;
+  }
+  // 浏览器模式：使用 <input type="file" accept=".asr">
   _el('SESSION_FILE_INPUT').value = '';
   _el('SESSION_FILE_INPUT').click();
 }
@@ -2219,6 +2301,134 @@ function addEntry(e){
   }
 }
 
+// ── 改进①: 草稿态 entry（ASR完成，LLM还未开始）─────────────
+function addEntryDraft(e){
+  const h=_el('HINT'); if(h) h.remove();
+  const cls=lc(e.language||'');
+  const div=document.createElement('div');
+  div.className=`ent ${cls} draft`;
+  div.dataset.id=e.id;
+  div.onclick = () => seekToEntry(div);
+  div.dataset.raw=(e.raw||'').toLowerCase();
+  if(e.mp3_offset_s != null) div.dataset.mp3Offset = e.mp3_offset_s;
+  if(e.speaker_id != null) div.dataset.spkId = e.speaker_id;
+  const spkHtml = e.speaker_id != null ? spkBadgeHtml(e.speaker_id, e.id) : '';
+  const ts = e.timestamp || new Date().toTimeString().slice(0,8);
+  div.innerHTML=`
+    <div class="eHead" style="position:relative">
+      <span class="badge ${cls}">${TL(cls)||'…'}</span>
+      ${spkHtml}
+      <span class="ets">${ts}</span>
+      <span class="elat">ASR ${e.asr_ms}ms</span>
+      <span class="draft-badge correcting" id="dbadge-${e.id}">${T('draftCorrecting')}</span>
+    </div>
+    <div class="orig" id="orig-${e.id}" data-plain="${escHtml(e.raw||'').replace(/"/g,'&quot;')}">${escHtml(e.raw||'')}</div>
+  `;
+  SC.appendChild(div);
+  sentCnt++; charCnt+=(e.raw||'').length;
+  _markUnsaved();
+  MC.textContent=sentCnt; MCH.textContent=charCnt;
+  renderSpkList();   // ← Bug2修复：草稿加入后刷新发言人侧栏
+  if(autoScroll) scrollBot();
+  if(e.mp3_offset_s != null){
+    const sec=parseFloat(e.mp3_offset_s);
+    const idx=_entryTimes.findIndex(t=>t.sec>sec);
+    const item={el:div, sec};
+    if(idx===-1) _entryTimes.push(item);
+    else _entryTimes.splice(idx,0,item);
+  }
+}
+
+// ── 改进①: 矫正完成，升级草稿（翻译还在路上）──────────────
+function applyEntryCorrection(m){
+  const card=document.querySelector(`.ent[data-id="${m.id}"]`);
+  if(!card) return;
+  const cls=lc(m.language||'');
+  // 更新语言 badge
+  const badge=card.querySelector('.badge');
+  if(badge){ badge.className=`badge ${cls}`; badge.textContent=TL(cls)||cls; }
+  card.className=`ent ${cls} draft`;
+  // 更新原文
+  const origEl=_el('orig-'+m.id);
+  if(origEl && origEl.tagName!=='TEXTAREA'){
+    origEl.textContent=m.corrected||'';
+    origEl.dataset.plain=(m.corrected||'').toLowerCase();
+  }
+  // 更新搜索索引
+  card.dataset.raw=(m.corrected||'').toLowerCase();
+  // 字数校正（草稿时按raw计，现在换成corrected）
+  charCnt+=((m.corrected||'').length-(card.dataset.rawLen||0));
+  card.dataset.rawLen=m.corrected?.length||0;
+  MCH.textContent=charCnt;
+  // 更新延迟显示
+  const lat=card.querySelector('.elat');
+  if(lat) lat.textContent=`ASR ${m.asr_ms}ms · 矫正 ${m.llm_ms}ms`;
+  // 切换 badge 为"翻译中"
+  const db=_el('dbadge-'+m.id);
+  if(db){ db.className='draft-badge translating'; db.textContent=T('draftTranslating'); }
+  // 更新说话人（dataset值为字符串，用!==判断是否已设置）
+  if(m.speaker_id != null){
+    if(!card.dataset.spkId){   // 未设置或空字符串
+      card.dataset.spkId = m.speaker_id;
+      const existing = card.querySelector('.spk-badge');
+      if(!existing){
+        const langBadge = card.querySelector('.badge');
+        if(langBadge) langBadge.insertAdjacentHTML('afterend', spkBadgeHtml(m.speaker_id, m.id));
+      }
+    }
+    renderSpkList();
+  }
+  if(autoScroll) scrollBot();
+}
+
+// ── 改进①: 翻译完成，最终化 entry ──────────────────────────
+function applyEntryFinalized(m){
+  const card=document.querySelector(`.ent[data-id="${m.id}"]`);
+  if(!card) return;
+  // 移除草稿样式
+  card.classList.remove('draft');
+  // 移除等待 badge
+  const db=_el('dbadge-'+m.id);
+  if(db) db.remove();
+  // 添加编辑按钮（草稿态没有）
+  const lat=card.querySelector('.elat');
+  if(lat){
+    const totalLlm=(parseInt(lat.textContent.match(/矫正\s*(\d+)/)?.[1]||0)+(m.llm_ms||0));
+    const asrMs=lat.textContent.match(/ASR\s*(\d+)/)?.[1]||0;
+    lat.textContent=`ASR ${asrMs}ms · LLM ${totalLlm}ms`;
+  }
+  const eHead=card.querySelector('.eHead');
+  if(eHead && !eHead.querySelector('.edit-btn')){
+    eHead.insertAdjacentHTML('beforeend',
+      `<button class="edit-btn" title="${T('titleEditOrig')}" onclick="toggleEditOrig(event,'${m.id}')">${T('btnEditOrig')}</button>`);
+  }
+  // 渲染翻译
+  const origCode=lc(card.querySelector('.badge')?.classList[1]||'');
+  const trans=m.translations||{};
+  let transHtml='';
+  Object.entries(trans).forEach(([ln,tx])=>{
+    const code=tc(ln);
+    if(code===origCode) return;
+    const col=langColor(code);
+    const label=TL(code);
+    const safeQ=escHtml(tx).replace(/"/g,'&quot;');
+    transHtml+=`<div class="trow"><span class="tlbl" style="color:${col}">${label}</span><span class="tt" data-plain="${safeQ}" style="color:${col};opacity:.85">${escHtml(tx)}</span></div>`;
+  });
+  if(transHtml){
+    let tblock=card.querySelector('.tblock');
+    if(!tblock){
+      tblock=document.createElement('div');
+      tblock.className='tblock';
+      card.appendChild(tblock);
+    }
+    tblock.innerHTML=transHtml;
+  }
+  // 更新搜索索引
+  const origText=(card.querySelector('.orig')?.dataset?.plain||'');
+  card.dataset.raw=origText+' '+Object.values(trans).join(' ').toLowerCase();
+  if(autoScroll) scrollBot();
+}
+
 // ── 应用后端返回的 entry_updated（重翻译结果）───────────────
 function applyEntryUpdate(m){
   const id   = m.id;
@@ -2406,14 +2616,32 @@ async function openSettings(){
         ? `<option value="sensevoice"${curBackend==='sensevoice'?' selected':''}>${svCached?T('asrBackendSV'):T('asrBackendSVNoModel')}</option>`
         : `<option value="sensevoice" disabled>${T('asrBackendSVNoPkg')}</option>`);
 
-    // Show/hide Whisper vs SenseVoice model rows
+    // Show/hide Whisper vs SenseVoice model rows + 改进⑤: SenseVoice警告
     function _refreshBackendRows(){
       const b=sBackend.value;
       const sfW=_el('SF_WHISPER'), sfS=_el('SF_SENSEVOICE');
       if(sfW) sfW.style.display=(b==='whisper')?'':'none';
       if(sfS) sfS.style.display=(b==='sensevoice')?'':'none';
+      // 改进⑤: 切换到 SenseVoice 且有场景提示词时，显示警告
+      let svWarn=_el('SV_PROMPT_WARN');
+      const hasPrompt=(_el('SCP')?.value||'').trim().length>0;
+      if(b==='sensevoice' && hasPrompt){
+        if(!svWarn){
+          svWarn=document.createElement('div');
+          svWarn.id='SV_PROMPT_WARN';
+          svWarn.style.cssText='margin-top:6px;padding:7px 10px;border-radius:5px;background:rgba(224,160,80,.1);border:0.5px solid rgba(224,160,80,.3);color:#c8922a;font-size:12px;line-height:1.5';
+          const scpField=_el('SCP');
+          if(scpField) scpField.closest('.sf')?.after(svWarn);
+        }
+        svWarn.textContent=T('svNoPromptWarn');
+      } else if(svWarn){
+        svWarn.remove();
+      }
     }
     sBackend.onchange=_refreshBackendRows;
+    // 场景提示词变更时也刷新警告
+    const scpEl=_el('SCP');
+    if(scpEl) scpEl.addEventListener('input',_refreshBackendRows);
     _refreshBackendRows();
 
     // Whisper dropdown
