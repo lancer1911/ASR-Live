@@ -213,6 +213,9 @@ def worker_main(task_q: Queue, result_q: Queue,
                 max_tok = 600   # 翻译任务：多语言输出稍长
             else:
                 max_tok = 800   # retranslate 等兼容任务保持原值
+
+            # prompt 末尾已通过 assistant prefill（<think>\n</think>\n）
+            # 强制 Qwen3 系列跳过 thinking 阶段直接输出 JSON，无需特殊 token 处理
             resp = mlx_gen(
                 llm_model, llm_tok,
                 prompt=prompt_str,

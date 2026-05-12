@@ -562,7 +562,12 @@ def handle_worker_result(msg: dict):
         pending_meta = G._pending.pop(tid, None)
 
         # ── 解析 LLM JSON 输出（共用逻辑）──────────────────────
+        # 先移除已闭合的 <think>...</think> 块（Qwen3 thinking 模式）
         resp_clean = re.sub(r"<think>.*?</think>", "", resp, flags=re.DOTALL)
+        # 若 <think> 块被 max_tokens 截断未闭合，丢弃推理内容只保留前段 JSON
+        if "<think>" in resp_clean:
+            parts = resp_clean.split("</think>", 1)
+            resp_clean = parts[1] if len(parts) > 1 else resp_clean.split("<think>", 1)[0]
         text = re.sub(r"```json\s*|```", "", resp_clean).strip()
         out = {}
         try:
@@ -796,7 +801,7 @@ def build_retranslate_prompt(text: str) -> str:
         f"  \"language\": \"<Chinese|English|Japanese|Korean|French|German|Spanish>\"{trans_block}\n"
         "}\n"
         "/no_think<|im_end|>\n"
-        "<|im_start|>assistant\n"
+        "<|im_start|>assistant\n<think>\n</think>\n"
     )
 
 def build_correction_prompt(raw: str, lang: str, ctx: list) -> str:
@@ -836,7 +841,7 @@ def build_correction_prompt(raw: str, lang: str, ctx: list) -> str:
         f"  \"language\": \"<{lang_enum}>\"\n"
         "}\n"
         "/no_think<|im_end|>\n"
-        "<|im_start|>assistant\n"
+        "<|im_start|>assistant\n<think>\n</think>\n"
     )
 
 
@@ -867,7 +872,7 @@ def build_translation_prompt(corrected: str, lang: str) -> str:
         f"  \"translations\": {{\n{trans_lines}  }}\n"
         "}\n"
         "/no_think<|im_end|>\n"
-        "<|im_start|>assistant\n"
+        "<|im_start|>assistant\n<think>\n</think>\n"
     )
 
 
@@ -909,7 +914,7 @@ def build_llm_prompt(raw: str, lang: str, ctx: list) -> str:
         f"  \"language\": \"<{lang_enum}>\"{trans_block}\n"
         "}\n"
         "/no_think<|im_end|>\n"
-        "<|im_start|>assistant\n"
+        "<|im_start|>assistant\n<think>\n</think>\n"
     )
 # ─── ASR 音频队列处理线程 ─────────────────────────────────────
 def _queue_drop_oldest(q: queue.Queue, item):
